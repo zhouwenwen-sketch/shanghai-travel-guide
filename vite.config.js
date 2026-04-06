@@ -24,5 +24,8 @@ export default defineConfig({
       resolvers: [ElementPlusResolver()], // 让插件自动识别 Element Plus 组件
     }),
   ],
-  base: '/shanghai-travel-guide/'
+  base: './',
+  build: {
+    outDir: 'docs'   // 打包到 docs 文件夹
+  },
 })
