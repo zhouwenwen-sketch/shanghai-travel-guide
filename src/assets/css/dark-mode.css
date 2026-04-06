@@ -1,0 +1,70 @@
+/**
+ * 业务布局在深色模式下的覆盖（配合 Element Plus 的 html.dark 变量）
+ * 过渡动画让切换更自然
+ */
+html {
+  transition: background-color 0.35s ease, color 0.25s ease;
+}
+
+html.dark body {
+  color: var(--el-text-color-primary);
+  background-color: var(--el-bg-color-page);
+}
+
+html.dark a {
+  color: var(--el-text-color-regular);
+}
+
+html.dark .headerNav {
+  background-color: var(--el-bg-color);
+  border-bottom: 1px solid var(--el-border-color-light);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+}
+
+html.dark .user-welcome {
+  color: var(--el-text-color-regular);
+}
+
+html.dark .searchlist-item {
+  border-color: var(--el-border-color);
+  background-color: var(--el-fill-color-blank);
+}
+
+html.dark .search-box label {
+  color: var(--el-text-color-regular);
+}
+
+html.dark .search-box input {
+  color: var(--el-text-color-primary);
+  background: transparent;
+}
+
+html.dark .topfilter > div {
+  border-bottom-color: var(--el-border-color);
+}
+
+html.dark .recommend-list ul li {
+  background-color: var(--el-fill-color-light);
+}
+
+html.dark .list-right {
+  border-left-color: var(--el-border-color);
+}
+
+html.dark .list-right-describe a {
+  color: var(--el-text-color-secondary);
+}
+
+/* 登录页：深色下稍压暗背景渐变 */
+html.dark .login-container {
+  background: linear-gradient(
+    145deg,
+    #1a1d2e 0%,
+    #252836 45%,
+    var(--el-bg-color-page) 100%
+  );
+}
+
+html.dark .login-title {
+  color: var(--el-text-color-primary);
+}
