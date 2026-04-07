@@ -31,25 +31,27 @@ https://zhouwenwen-sketch.github.io/shanghai-travel-guide/
 - CSS3：Flex 布局、Grid 布局
 
 ## 项目结构
+```
 src/
-├── assets/ # 静态资源（图片、样式、字体）
+├── assets/ # 静态资源
 ├── components/ # 可复用组件
-│ ├── Banner.vue # 轮播图组件
-│ ├── headerNav.vue # 头部导航组件
-│ ├── navMenu.vue # 左侧菜单组件
-│ ├── recommend.vue # 推荐区域组件
-│ ├── recommend-list.vue # 酒店列表组件
-│ ├── searchlist.vue # 搜索区域组件
-│ └── topfilter.vue # 筛选区域组件
-├── stores/ # Pinia 状态管理
-│ ├── user.js # 用户状态管理
-│ └── theme.js # 主题状态管理
-├── views/ # 页面组件
-│ ├── index.vue # 首页
-│ └── login.vue # 登录页
 ├── router/ # 路由配置
+├── stores/ # Pinia 状态管理
+│ ├── theme.js
+│ └── user.js
+├── views/ # 页面组件
+│ ├── banner.vue
+│ ├── headerNav.vue
+│ └── index.vue
+│ └── login.vue
+│ ├── navMenu.vue
+│ ├── recommend.vue
+│ ├── recommend-list.vue
+│ ├── searchlist.vue
+│ └── topfilter.vue
 ├── App.vue # 根组件
 └── main.js # 入口文件
+```
 
 text
 
@@ -84,17 +86,3 @@ npx serve dist
 
 作者
 周文雯 - 上海大学计算机科学与技术专业
-
-许可证
-MIT
-
-text
-
----
-
-## 📋 使用说明
-
-1. 在 GitHub 仓库中，点击 `README.md` 文件
-2. 点击右上角的铅笔图标（编辑）
-3. 复制上面的内容，粘贴进去
-4. 点击 **Commit changes**（绿色按钮）
