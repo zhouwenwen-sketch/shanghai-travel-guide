@@ -15,12 +15,12 @@ let recommendlist = ref([
         <li v-for="v in recommendlist" :key="v.id">
             <div class="list-left">
                 <div class="list-left-img">
-                    <img :src="`/images/${v.img_url}`" alt="">
+                    <img :src="`./images/${v.img_url}`" alt="">
                 </div>
                 <div class="list-left-title">
                     <div class="list-left-tagandtitle">
                         <h4>{{v.name}}</h4>
-                        <img :src="`/images/${v.starimg_url}`" alt="">
+                        <img :src="`./images/${v.starimg_url}`" alt="">
                         <span class="badge-thumb"></span>
                     </div>
                     <div class="list-left-transport">
