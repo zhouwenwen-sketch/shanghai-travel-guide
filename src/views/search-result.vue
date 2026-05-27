@@ -1,12 +1,17 @@
 <script setup>
 import { ref, computed, reactive, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Close } from '@element-plus/icons-vue'
+import { ArrowLeft } from '@element-plus/icons-vue'
 import { searchHotels } from '@/api/hotels'
 import Topfilter from './topfilter.vue'
 
 const route = useRoute()
 const router = useRouter()
+
+// 分页
+const currentPage = ref(1)
+const pageSize = ref(6)
+const total = ref(0)
 
 const queryKeyword = computed(() => route.query.keyword || '')
 const queryDestination = computed(() => route.query.destination || '')
@@ -25,12 +30,14 @@ const filters = reactive({
 })
 
 const onFilterChange = (f) => {
+  currentPage.value = 1
   filters.area = f.area || ''
   filters.starLevel = f.starLevel || 0
   filters.priceLevel = f.priceLevel || ''
 }
 
 const removeFilter = (key) => {
+  currentPage.value = 1
   if (key === 'area') filters.area = ''
   if (key === 'starLevel') filters.starLevel = 0
   if (key === 'priceLevel') filters.priceLevel = ''
@@ -58,8 +65,14 @@ const activeFilterCount = computed(() => {
 const results = ref([])
 const loading = ref(false)
 
+const paginatedResults = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return results.value.slice(start, start + pageSize.value)
+})
+
 const fetchResults = async () => {
   loading.value = true
+  currentPage.value = 1
   try {
     const kw = [queryKeyword.value, queryDestination.value].filter(Boolean).join(' ')
     results.value = await searchHotels({
@@ -68,6 +81,7 @@ const fetchResults = async () => {
       starLevel: filters.starLevel || undefined,
       priceLevel: filters.priceLevel || undefined,
     })
+    total.value = results.value.length
   } catch (e) {
     console.error('搜索失败:', e)
   } finally {
@@ -132,7 +146,7 @@ const criteriaTags = computed(() => {
     </div>
 
     <div class="result-list" v-if="results.length" v-loading="loading">
-      <div class="result-item" v-for="hotel in results" :key="hotel.id">
+      <div class="result-item" v-for="hotel in paginatedResults" :key="hotel.id">
         <div class="item-left">
           <div class="item-img" @click="goDetail(hotel.id)">
             <img :src="hotel.img_url" alt="" />
@@ -163,6 +177,18 @@ const criteriaTags = computed(() => {
           <el-button type="primary" size="small" @click="goDetail(hotel.id)">查看详情</el-button>
         </div>
       </div>
+    </div>
+
+    <!-- 分页 -->
+    <div class="result-pagination" v-if="results.length > pageSize">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[6, 12, 24]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+      />
     </div>
 
     <div class="result-empty" v-else>
@@ -398,5 +424,11 @@ const criteriaTags = computed(() => {
   color: #999;
   font-size: 14px;
   margin-bottom: 12px;
+}
+
+.result-pagination {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0 8px;
 }
 </style>

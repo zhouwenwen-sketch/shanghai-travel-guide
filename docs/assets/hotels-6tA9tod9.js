@@ -1,1 +1,0 @@
-import{t as e}from"./api-vDkMHnmN.js";import{n as t,r as n,t as r}from"./hotels-Dst43S6S.js";async function i(){try{return await e.get(`/hotels/recommended`)}catch{return n()}}async function a(n){try{return await e.get(`/hotels/${n}`)}catch{return t(n)}}async function o(t={}){try{return await e.get(`/hotels/search`,{params:t})}catch{return r(t)}}export{i as n,o as r,a as t};
