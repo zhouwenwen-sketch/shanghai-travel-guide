@@ -68,3 +68,120 @@ html.dark .login-container {
 html.dark .login-title {
   color: var(--el-text-color-primary);
 }
+
+/* 酒店详情页深色模式 */
+html.dark .detail-header,
+html.dark .detail-tabs {
+  background-color: var(--el-bg-color);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+html.dark .hotel-address,
+html.dark .hotel-phone,
+html.dark .hotel-desc {
+  color: var(--el-text-color-regular);
+}
+
+html.dark .rating-desc {
+  color: var(--el-text-color-primary);
+}
+
+html.dark .room-spec {
+  color: var(--el-text-color-secondary);
+}
+
+html.dark .review-content {
+  color: var(--el-text-color-primary);
+}
+
+html.dark .review-desc-text {
+  color: var(--el-text-color-primary);
+}
+
+html.dark .review-reply {
+  background-color: var(--el-fill-color-light);
+  color: var(--el-text-color-secondary);
+}
+
+html.dark .room-item {
+  border-bottom-color: var(--el-border-color-lighter);
+}
+
+html.dark .review-item,
+html.dark .review-summary {
+  border-bottom-color: var(--el-border-color-lighter);
+}
+
+html.dark .detail-footer-bar {
+  background-color: var(--el-bg-color);
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.3);
+}
+
+html.dark .footer-price-text {
+  color: var(--el-text-color-secondary);
+}
+
+/* 搜索结果页深色模式 */
+html.dark .result-header,
+html.dark .result-list {
+  background-color: var(--el-bg-color);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+html.dark .result-item {
+  border-bottom-color: var(--el-border-color-lighter);
+}
+
+html.dark .item-address {
+  color: var(--el-text-color-secondary);
+}
+
+html.dark .item-right {
+  border-left-color: var(--el-border-color-lighter);
+}
+
+/* 个人中心页深色模式 */
+html.dark .uc-profile-card,
+html.dark .uc-main {
+  background-color: var(--el-bg-color);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+html.dark .uc-stats {
+  border-top-color: var(--el-border-color-lighter);
+}
+
+html.dark .uc-hotel-item {
+  border-color: var(--el-border-color-lighter);
+  background-color: var(--el-fill-color-blank);
+}
+
+html.dark .uc-hotel-item:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+html.dark .uc-hotel-addr,
+html.dark .uc-hotel-time,
+html.dark .uc-role {
+  color: var(--el-text-color-secondary);
+}
+
+html.dark .uc-price small {
+  color: var(--el-text-color-secondary);
+}
+
+/* 搜索结果页深色模式 - 筛选区 */
+html.dark .result-filter-bar,
+html.dark .result-empty {
+  background-color: var(--el-bg-color);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+html.dark .filter-hint,
+html.dark .empty-tip {
+  color: var(--el-text-color-secondary);
+}
+
+html.dark .item-img {
+  background-color: var(--el-fill-color-light);
+}

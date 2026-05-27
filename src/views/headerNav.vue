@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'  //导入router
-import { Search,Avatar,ArrowDown } from '@element-plus/icons-vue'
+import { Search,Avatar,ArrowDown,User } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
@@ -12,6 +12,13 @@ const { isLoggedIn, displayName } = storeToRefs(userStore)
 
 const input3 = ref('')
 
+const handleHeaderSearch = () => {
+  const kw = input3.value.trim()
+  if (kw) {
+    router.push({ name: 'search', query: { keyword: kw } })
+  }
+}
+
 let Myorder = ref([
     { id: 1, title: '酒店订单' },
     { id: 2, title: '火车票订单' },
@@ -19,9 +26,12 @@ let Myorder = ref([
     { id: 4, title: '旅游订单' },
     { id: 5, title: '全部订单' }
 ])
-// 跳转到登录页
 const goToLogin = () => {
   router.push('/login')
+}
+
+const goToUserCenter = () => {
+  router.push('/user')
 }
 
 const handleLogout = () => {
@@ -39,23 +49,25 @@ const handleLogout = () => {
         <div class="header-search">
             <el-input
                 v-model="input3"
-                placeholder="请输入内容"
+                placeholder="搜索酒店、景点..."
                 class="input-with-select"
+                @keyup.enter="handleHeaderSearch"
                 >
                 <template #append>
-                    <el-button :icon="Search" />
+                    <el-button :icon="Search" @click="handleHeaderSearch" />
                 </template>
             </el-input>
         </div>
         <div class="header-right">
             <template v-if="!isLoggedIn">
               <el-link :icon="Avatar" @click="goToLogin">请登录</el-link>
+              <el-link target="_blank">注册</el-link>
             </template>
             <template v-else>
               <span class="user-welcome">你好，{{ displayName }}</span>
+              <el-link :icon="User" @click="goToUserCenter">个人中心</el-link>
               <el-link type="danger" @click="handleLogout">退出</el-link>
             </template>
-            <el-link target="_blank">注册</el-link>
             <el-link>
                 <el-dropdown>
                     <span class="el-dropdown-link">

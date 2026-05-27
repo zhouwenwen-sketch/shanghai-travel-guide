@@ -10,7 +10,13 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 export default defineConfig({
   server:{
     open:true,//自动打开浏览器
-    port:8080
+    port:8080,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+      }
+    }
   },
   resolve: {
     alias: {

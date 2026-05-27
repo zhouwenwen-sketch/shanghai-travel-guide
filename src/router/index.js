@@ -16,6 +16,25 @@ const routes = [
     name: 'login',
     component: () => import('@/views/login.vue'),
   },
+  // 酒店详情页
+  {
+    path: '/hotel/:id',
+    name: 'hotel-detail',
+    component: () => import('@/views/hotel-detail.vue'),
+  },
+  // 搜索结果页
+  {
+    path: '/search',
+    name: 'search',
+    component: () => import('@/views/search-result.vue'),
+  },
+  // 个人中心（需登录）
+  {
+    path: '/user',
+    name: 'user-center',
+    component: () => import('@/views/user-center.vue'),
+    meta: { requiresAuth: true },
+  },
 ]
 
 // 3. 创建路由实例
