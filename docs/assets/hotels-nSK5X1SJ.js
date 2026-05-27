@@ -1,1 +1,0 @@
-import{t as e}from"./api-vDkMHnmN.js";function t(){return e.get(`/hotels/recommended`)}function n(t){return e.get(`/hotels/${t}`)}function r(t={}){return e.get(`/hotels/search`,{params:t})}export{t as n,r,n as t};

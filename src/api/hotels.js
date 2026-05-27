@@ -1,17 +1,34 @@
 import api from './index'
+import { getRecommendedHotels as getMockRecommended, getHotelById as getMockDetail, filterHotels as mockFilter } from '@/data/hotels'
 
-export function getAllHotels() {
-  return api.get('/hotels')
+export async function getAllHotels() {
+  try {
+    return await api.get('/hotels')
+  } catch {
+    return mockFilter()
+  }
 }
 
-export function getRecommendedHotels() {
-  return api.get('/hotels/recommended')
+export async function getRecommendedHotels() {
+  try {
+    return await api.get('/hotels/recommended')
+  } catch {
+    return getMockRecommended()
+  }
 }
 
-export function getHotelDetail(id) {
-  return api.get(`/hotels/${id}`)
+export async function getHotelDetail(id) {
+  try {
+    return await api.get(`/hotels/${id}`)
+  } catch {
+    return getMockDetail(id)
+  }
 }
 
-export function searchHotels(params = {}) {
-  return api.get('/hotels/search', { params })
+export async function searchHotels(params = {}) {
+  try {
+    return await api.get('/hotels/search', { params })
+  } catch {
+    return mockFilter(params)
+  }
 }
