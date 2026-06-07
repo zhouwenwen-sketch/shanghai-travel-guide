@@ -7,5 +7,5 @@ public interface HotelService {
     List<Hotel> getAllHotels();
     List<Hotel> getRecommendedHotels();
     Hotel getHotelDetail(Long id);
-    List<Hotel> search(String keyword, String area, Integer starLevel, String priceLevel);
+    List<Hotel> search(String keyword, String area, Integer starLevel, Integer minPrice, Integer maxPrice);
 }

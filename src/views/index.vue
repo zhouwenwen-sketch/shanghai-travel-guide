@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'//引入ref
 import NavMenu from './navMenu.vue' //导入左侧导航栏
 import Header from './headerNav.vue' //导入头部

@@ -1,23 +1,30 @@
 import { defineStore } from 'pinia'
+import type { User } from '@/types'
 import { login as loginApi, register as registerApi } from '@/api/user'
 
 const LS_USER_ID = 'user_id'
 const LS_USERNAME = 'username'
 
+interface UserState {
+  userId: number | null
+  username: string
+  isLoggedIn: boolean
+}
+
 export const useUserStore = defineStore('user', {
-  state: () => ({
+  state: (): UserState => ({
     userId: localStorage.getItem(LS_USER_ID) ? Number(localStorage.getItem(LS_USER_ID)) : null,
     username: localStorage.getItem(LS_USERNAME) || '',
     isLoggedIn: !!localStorage.getItem(LS_USER_ID),
   }),
 
   getters: {
-    displayName: (state) => state.username || '游客',
-    isLogin: (state) => state.isLoggedIn,
+    displayName: (state): string => state.username || '游客',
+    isLogin: (state): boolean => state.isLoggedIn,
   },
 
   actions: {
-    async login(username, password) {
+    async login(username: string, password: string): Promise<void> {
       if (!username?.trim() || !password) {
         throw new Error('请输入用户名和密码')
       }
@@ -25,11 +32,11 @@ export const useUserStore = defineStore('user', {
       this.userId = data.userId
       this.username = data.username
       this.isLoggedIn = true
-      localStorage.setItem(LS_USER_ID, data.userId)
+      localStorage.setItem(LS_USER_ID, String(data.userId))
       localStorage.setItem(LS_USERNAME, data.username)
     },
 
-    async register(username, password) {
+    async register(username: string, password: string): Promise<void> {
       if (!username?.trim() || !password) {
         throw new Error('请输入用户名和密码')
       }
@@ -37,11 +44,11 @@ export const useUserStore = defineStore('user', {
       this.userId = data.userId
       this.username = data.username
       this.isLoggedIn = true
-      localStorage.setItem(LS_USER_ID, data.userId)
+      localStorage.setItem(LS_USER_ID, String(data.userId))
       localStorage.setItem(LS_USERNAME, data.username)
     },
 
-    logout() {
+    logout(): void {
       this.userId = null
       this.username = ''
       this.isLoggedIn = false

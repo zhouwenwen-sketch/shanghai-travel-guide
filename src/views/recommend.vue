@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import Banner from './banner.vue'
 import Recommendlist from './recommend-list.vue'

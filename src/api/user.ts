@@ -1,8 +1,9 @@
 import api from './index'
+import type { LoginResult } from '@/types'
 
 const DEMO_USER = { userId: 1, username: 'demo', password: '123456' }
 
-export async function login(username, password) {
+export async function login(username: string, password: string): Promise<LoginResult> {
   try {
     return await api.post('/users/login', { username, password })
   } catch {
@@ -13,13 +14,10 @@ export async function login(username, password) {
   }
 }
 
-export async function register(username, password) {
+export async function register(username: string, password: string): Promise<LoginResult> {
   try {
     return await api.post('/users/register', { username, password })
   } catch {
     return { userId: Date.now(), username }
   }
 }
-
-
-

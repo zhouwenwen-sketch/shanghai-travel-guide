@@ -1,8 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { User, Star, Clock, Delete, ArrowLeft } from '@element-plus/icons-vue'
+import { User, Clock, Delete, ArrowLeft } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { getFavorites, removeFavorite } from '@/api/favorites'
 import { getHistory, clearHistory } from '@/api/history'
@@ -160,7 +160,7 @@ const handleRemoveFavorite = async (hotelId) => {
               <el-button type="danger" size="small" text @click="handleClearHistory">清空记录</el-button>
             </div>
             <div v-if="historyList.length" class="uc-hotel-list">
-              <div class="uc-hotel-item" v-for="h in historyList" :key="h.id">
+              <div class="uc-hotel-item" v-for="h in historyList" :key="h.hotelId">
                 <div class="uc-hotel-left" @click="goDetail(h.hotel?.id)">
                   <div class="uc-hotel-img">
                     <img :src="h.hotel?.img_url" alt="" />

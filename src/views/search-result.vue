@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, reactive, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
@@ -50,7 +50,7 @@ const starTagType = (lv) => {
   return 'info'
 }
 const priceLabel = (lv) => {
-  const map = { 'low': '150-300', 'mid': '300-450', 'high': '450-600', 'luxury': '600以上' }
+  const map = { 'low-low': '150以下', 'low': '150-300', 'mid': '300-450', 'high': '450-600', 'luxury': '600以上' }
   return map[lv] || ''
 }
 
@@ -135,7 +135,7 @@ const criteriaTags = computed(() => {
     </div>
 
     <div class="result-filter-bar">
-      <Topfilter @filter-change="onFilterChange" />
+      <Topfilter @filter-change="onFilterChange" :active-filters="filters" />
     </div>
 
     <div class="active-filters" v-if="activeFilterCount">
@@ -145,53 +145,56 @@ const criteriaTags = computed(() => {
       <el-tag v-if="filters.priceLevel" closable size="small" type="primary" @close="removeFilter('priceLevel')">{{ priceLabel(filters.priceLevel) }}</el-tag>
     </div>
 
-    <div class="result-list" v-if="results.length" v-loading="loading">
-      <div class="result-item" v-for="hotel in paginatedResults" :key="hotel.id">
-        <div class="item-left">
-          <div class="item-img" @click="goDetail(hotel.id)">
-            <img :src="hotel.img_url" alt="" />
-          </div>
-          <div class="item-info">
-            <div class="item-title-row" @click="goDetail(hotel.id)">
-              <h3>{{ hotel.name }}</h3>
-              <img :src="`./images/${hotel.starimg_url}`" alt="" class="star-img" />
-              <el-tag :type="starTagType(hotel.starLevel)" size="small" class="star-level-tag">{{ starLabel(hotel.starLevel) }}</el-tag>
-              <span class="item-recommend" v-if="hotel.recommended">推荐</span>
+    <div v-loading="loading" class="result-loading-wrap">
+      <template v-if="results.length">
+        <div class="result-list">
+          <div class="result-item" v-for="hotel in paginatedResults" :key="hotel.id">
+            <div class="item-left">
+              <div class="item-img" @click="goDetail(hotel.id)">
+                <img :src="hotel.img_url" alt="" />
+              </div>
+              <div class="item-info">
+                <div class="item-title-row" @click="goDetail(hotel.id)">
+                  <h3>{{ hotel.name }}</h3>
+                  <img :src="`./images/${hotel.starimg_url}`" alt="" class="star-img" />
+                  <el-tag :type="starTagType(hotel.starLevel)" size="small" class="star-level-tag">{{ starLabel(hotel.starLevel) }}</el-tag>
+                  <span class="item-recommend" v-if="hotel.recommended">推荐</span>
+                </div>
+                <p class="item-address">{{ hotel.transport }}</p>
+                <div class="item-tags">
+                  <el-tag v-for="(t, i) in hotel.tag.slice(0, 5)" :key="i" type="warning" effect="plain" size="small">{{ t }}</el-tag>
+                </div>
+              </div>
             </div>
-            <p class="item-address">{{ hotel.transport }}</p>
-            <div class="item-tags">
-              <el-tag v-for="(t, i) in hotel.tag.slice(0, 5)" :key="i" type="warning" effect="plain" size="small">{{ t }}</el-tag>
+            <div class="item-right">
+              <div class="item-comment">
+                <span class="comment-desc">{{ hotel.reviewDesc }}</span>
+                <span class="comment-score">{{ hotel.rating }}</span>
+              </div>
+              <div class="item-price">
+                <span class="price-label">￥</span>
+                <span class="price-value">{{ hotel.price }}</span>
+                <span class="price-unit">起/晚</span>
+              </div>
+              <el-button type="primary" size="small" @click="goDetail(hotel.id)">查看详情</el-button>
             </div>
           </div>
         </div>
-        <div class="item-right">
-          <div class="item-comment">
-            <span class="comment-desc">{{ hotel.reviewDesc }}</span>
-            <span class="comment-score">{{ hotel.rating }}</span>
-          </div>
-          <div class="item-price">
-            <span class="price-label">￥</span>
-            <span class="price-value">{{ hotel.price }}</span>
-            <span class="price-unit">起/晚</span>
-          </div>
-          <el-button type="primary" size="small" @click="goDetail(hotel.id)">查看详情</el-button>
+
+        <!-- 分页 -->
+        <div class="result-pagination" v-if="results.length > pageSize">
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :total="total"
+            :page-sizes="[6, 12, 24]"
+            layout="total, sizes, prev, pager, next, jumper"
+            background
+          />
         </div>
-      </div>
-    </div>
+      </template>
 
-    <!-- 分页 -->
-    <div class="result-pagination" v-if="results.length > pageSize">
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :total="total"
-        :page-sizes="[6, 12, 24]"
-        layout="total, sizes, prev, pager, next, jumper"
-        background
-      />
-    </div>
-
-    <div class="result-empty" v-else>
+      <div class="result-empty" v-else>
       <el-empty description="未找到匹配的酒店">
         <template #extra>
           <p class="empty-tip">试试调整筛选条件或搜索关键词</p>
@@ -200,6 +203,7 @@ const criteriaTags = computed(() => {
       </el-empty>
     </div>
   </div>
+</div>
 </template>
 
 <style scoped>
@@ -411,6 +415,10 @@ const criteriaTags = computed(() => {
 .price-unit {
   font-size: 12px;
   color: #999;
+}
+
+.result-loading-wrap {
+  min-height: 200px;
 }
 
 .result-empty {

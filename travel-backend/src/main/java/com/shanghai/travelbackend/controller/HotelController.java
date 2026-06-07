@@ -6,11 +6,20 @@ import com.shanghai.travelbackend.service.HotelService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/hotels")
 @RequiredArgsConstructor
 public class HotelController {
+
+    private static final Map<String, int[]> PRICE_RANGES = Map.of(
+        "low-low", new int[]{0, 150},
+        "low", new int[]{150, 300},
+        "mid", new int[]{300, 450},
+        "high", new int[]{450, 600},
+        "luxury", new int[]{600, Integer.MAX_VALUE}
+    );
 
     private final HotelService hotelService;
 
@@ -35,6 +44,15 @@ public class HotelController {
             @RequestParam(required = false) String area,
             @RequestParam(required = false) Integer starLevel,
             @RequestParam(required = false) String priceLevel) {
-        return ApiResult.ok(hotelService.search(keyword, area, starLevel, priceLevel));
+        Integer minPrice = null;
+        Integer maxPrice = null;
+        if (priceLevel != null && !priceLevel.isBlank()) {
+            int[] range = PRICE_RANGES.get(priceLevel);
+            if (range != null) {
+                minPrice = range[0];
+                maxPrice = range[1] == Integer.MAX_VALUE ? null : range[1];
+            }
+        }
+        return ApiResult.ok(hotelService.search(keyword, area, starLevel, minPrice, maxPrice));
     }
 }

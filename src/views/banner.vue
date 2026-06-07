@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 let bannerlist = ref([
     {id:1,img_url:'banner-1.jpg'},

@@ -18,9 +18,11 @@ public interface HotelRepository extends JpaRepository<Hotel, Long> {
            "(:keyword IS NULL OR h.name LIKE %:keyword% OR h.description LIKE %:keyword%) AND " +
            "(:area IS NULL OR h.area = :area) AND " +
            "(:starLevel IS NULL OR h.starLevel = :starLevel) AND " +
-           "(:priceLevel IS NULL OR h.priceLevel = :priceLevel)")
+           "(:minPrice IS NULL OR h.price >= :minPrice) AND " +
+           "(:maxPrice IS NULL OR h.price < :maxPrice)")
     List<Hotel> search(@Param("keyword") String keyword,
                        @Param("area") String area,
                        @Param("starLevel") Integer starLevel,
-                       @Param("priceLevel") String priceLevel);
+                       @Param("minPrice") Integer minPrice,
+                       @Param("maxPrice") Integer maxPrice);
 }

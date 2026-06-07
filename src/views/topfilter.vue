@@ -1,8 +1,26 @@
-<script setup>
-import { ref } from 'vue'
+<script setup lang="ts">
+import { ref, watch } from 'vue'
 import { ArrowDown } from '@element-plus/icons-vue'
 
 const emit = defineEmits(['filter-change'])
+
+const props = defineProps({
+  activeFilters: {
+    type: Object,
+    default: () => ({ area: '', starLevel: 0, priceLevel: '' }),
+  },
+})
+
+// 从父组件同步当前筛选状态
+watch(
+  () => props.activeFilters,
+  (val) => {
+    activeArea.value = val.area || ''
+    activeStar.value = val.starLevel || 0
+    activePrice.value = val.priceLevel || ''
+  },
+  { deep: true }
+)
 
 const activeName = ref('first')
 

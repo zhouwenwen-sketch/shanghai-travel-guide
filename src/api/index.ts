@@ -1,14 +1,14 @@
 import axios from 'axios'
+import type { ApiResponse } from '@/types'
 
 const api = axios.create({
   baseURL: '/api',
   timeout: 10000,
 })
 
-// 响应拦截：统一提取 data
 api.interceptors.response.use(
   (res) => {
-    const body = res.data
+    const body = res.data as ApiResponse
     if (body.code === 200) return body.data
     return Promise.reject(new Error(body.message || '请求失败'))
   },
@@ -19,7 +19,3 @@ api.interceptors.response.use(
 )
 
 export default api
-
-
-
-
