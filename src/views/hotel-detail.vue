@@ -6,20 +6,21 @@ import { getHotelDetail } from '@/api/hotels'
 import { checkFavorite, addFavorite, removeFavorite } from '@/api/favorites'
 import { addHistory } from '@/api/history'
 import { useUserStore } from '@/stores/user'
+import type { Hotel, Room } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
-const hotel = ref(null)
+const hotel = ref<Hotel | null>(null)
 const isFav = ref(false)
 const loading = ref(true)
-const activeTab = ref('rooms')
+const activeTab = ref<'rooms' | 'reviews'>('rooms')
 
 const fetchHotel = async () => {
   loading.value = true
   try {
-    hotel.value = await getHotelDetail(route.params.id)
+    hotel.value = await getHotelDetail(route.params.id as string)
     // 记录浏览历史
     if (userStore.userId && hotel.value) {
       addHistory(userStore.userId, hotel.value.id).catch(() => {})
@@ -28,7 +29,7 @@ const fetchHotel = async () => {
     if (userStore.userId && hotel.value) {
       checkFavorite(userStore.userId, hotel.value.id).then(v => { isFav.value = v }).catch(() => {})
     }
-  } catch (e) {
+  } catch (e: unknown) {
     console.error('加载酒店详情失败:', e)
   } finally {
     loading.value = false
@@ -37,18 +38,18 @@ const fetchHotel = async () => {
 
 onMounted(fetchHotel)
 
-const starLabel = (lv) => ({ 5: '五星', 4: '四星', 3: '三星', 2: '二星' }[lv] || '')
-const starTagType = (lv) => {
+const starLabel = (lv: number): string => ({ 5: '五星', 4: '四星', 3: '三星', 2: '二星' }[lv] || '')
+const starTagType = (lv: number): 'danger' | 'warning' | 'info' => {
   if (lv === 5) return 'danger'
   if (lv === 4) return 'warning'
   return 'info'
 }
 
-const goBack = () => {
+const goBack = (): void => {
   router.back()
 }
 
-const toggleFav = async () => {
+const toggleFav = async (): Promise<void> => {
   if (!hotel.value || !userStore.userId) {
     alert('请先登录')
     router.push('/login')
@@ -62,13 +63,13 @@ const toggleFav = async () => {
       await addFavorite(userStore.userId, hotel.value.id)
       isFav.value = true
     }
-  } catch (e) {
+  } catch (e: unknown) {
     // 已收藏时忽略
-    if (e.message.includes('已收藏')) isFav.value = true
+    if (e instanceof Error && e.message.includes('已收藏')) isFav.value = true
   }
 }
 
-const handleBook = (room) => {
+const handleBook = (room: Room): void => {
   alert(`已选择「${room.name}」，￥${room.price}/晚\n\n下单功能开发中...`)
 }
 </script>

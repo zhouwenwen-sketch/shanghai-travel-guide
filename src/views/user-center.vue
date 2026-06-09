@@ -6,14 +6,15 @@ import { User, Clock, Delete, ArrowLeft } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { getFavorites, removeFavorite } from '@/api/favorites'
 import { getHistory, clearHistory } from '@/api/history'
+import type { Hotel, BrowseHistory } from '@/types'
 
 const router = useRouter()
 const userStore = useUserStore()
 const { displayName, userId } = storeToRefs(userStore)
 
 const activeTab = ref('info')
-const favoriteHotels = ref([])
-const historyList = ref([])
+const favoriteHotels = ref<Hotel[]>([])
+const historyList = ref<BrowseHistory[]>([])
 const loading = ref(false)
 
 const loadFavorites = async () => {
@@ -22,8 +23,8 @@ const loadFavorites = async () => {
   try {
     // favorites 返回的数据包含 hotel 对象
     const list = await getFavorites(userId.value)
-    favoriteHotels.value = list.map(f => f.hotel)
-  } catch (e) {
+    favoriteHotels.value = list.map(f => f.hotel).filter((h): h is Hotel => h != null)
+  } catch (e: unknown) {
     console.error('加载收藏失败:', e)
   } finally {
     loading.value = false
@@ -35,7 +36,7 @@ const loadHistory = async () => {
   loading.value = true
   try {
     historyList.value = await getHistory(userId.value)
-  } catch (e) {
+  } catch (e: unknown) {
     console.error('加载历史失败:', e)
   } finally {
     loading.value = false
@@ -53,13 +54,13 @@ watch(activeTab, (tab) => {
   if (tab === 'history') loadHistory()
 })
 
-const formatTime = (ts) => {
+const formatTime = (ts: number): string => {
   const d = new Date(ts)
-  const pad = (n) => String(n).padStart(2, '0')
+  const pad = (n: number): string => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-const goDetail = (id) => {
+const goDetail = (id: number): void => {
   router.push({ name: 'hotel-detail', params: { id } })
 }
 
@@ -72,17 +73,17 @@ const handleClearHistory = async () => {
   try {
     await clearHistory(userId.value)
     historyList.value = []
-  } catch (e) {
+  } catch (e: unknown) {
     console.error('清空历史失败:', e)
   }
 }
 
-const handleRemoveFavorite = async (hotelId) => {
+const handleRemoveFavorite = async (hotelId: number): Promise<void> => {
   if (!userId.value) return
   try {
     await removeFavorite(userId.value, hotelId)
     favoriteHotels.value = favoriteHotels.value.filter(h => h.id !== hotelId)
-  } catch (e) {
+  } catch (e: unknown) {
     console.error('取消收藏失败:', e)
   }
 }
@@ -161,7 +162,7 @@ const handleRemoveFavorite = async (hotelId) => {
             </div>
             <div v-if="historyList.length" class="uc-hotel-list">
               <div class="uc-hotel-item" v-for="h in historyList" :key="h.hotelId">
-                <div class="uc-hotel-left" @click="goDetail(h.hotel?.id)">
+                <div class="uc-hotel-left" @click="h.hotel && goDetail(h.hotel.id)">
                   <div class="uc-hotel-img">
                     <img :src="h.hotel?.img_url" alt="" />
                   </div>
@@ -169,7 +170,7 @@ const handleRemoveFavorite = async (hotelId) => {
                     <h3>{{ h.hotel?.name }}</h3>
                     <p class="uc-hotel-time">
                       <el-icon><Clock /></el-icon>
-                      {{ formatTime(h.timestamp) }}
+                      {{ h.timestamp ? formatTime(h.timestamp) : '' }}
                     </p>
                   </div>
                 </div>

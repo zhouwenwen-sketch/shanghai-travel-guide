@@ -10,7 +10,7 @@ const isLogin = ref(true)
 const loginForm = ref({ username: '', password: '' })
 const submitting = ref(false)
 
-const handleSubmit = async () => {
+const handleSubmit = async (): Promise<void> => {
   submitting.value = true
   try {
     if (isLogin.value) {
@@ -19,14 +19,14 @@ const handleSubmit = async () => {
       await userStore.register(loginForm.value.username, loginForm.value.password)//等待注册完成
     }
     router.push('/')//成功后才跳转
-  } catch (e) {
-    alert(e.message)//捕获错误并提示
+  } catch (e: unknown) {
+    if (e instanceof Error) alert(e.message)//捕获错误并提示
   } finally {
     submitting.value = false// 无论成功失败都关闭 loading
   }
 }
 
-const toggleMode = () => {
+const toggleMode = (): void => {
   isLogin.value = !isLogin.value
 }
 </script>

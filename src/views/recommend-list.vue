@@ -2,23 +2,24 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getRecommendedHotels } from '@/api/hotels'
+import type { Hotel } from '@/types'
 
 const router = useRouter()
 
-const recommendlist = ref([])
+const recommendlist = ref<Hotel[]>([])
 const loading = ref(true)
 
 onMounted(async () => {
   try {
     recommendlist.value = await getRecommendedHotels()
-  } catch (e) {
+  } catch (e: unknown) {
     console.error('加载推荐酒店失败:', e)
   } finally {
     loading.value = false
   }
 })
 
-const goDetail = (id) => {
+const goDetail = (id: number): void => {
   router.push({ name: 'hotel-detail', params: { id } })
 }
 </script>

@@ -1,23 +1,46 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { ArrowDown } from '@element-plus/icons-vue'
+import type { FilterChangePayload } from '@/types'
 
-const emit = defineEmits(['filter-change'])
+interface TabItem {
+  id: number
+  name: string
+  label: string
+  list: string[]
+}
 
-const props = defineProps({
-  activeFilters: {
-    type: Object,
-    default: () => ({ area: '', starLevel: 0, priceLevel: '' }),
-  },
-})
+interface StarPriceItem {
+  label: string
+  star?: number
+  price?: string
+}
 
-// 从父组件同步当前筛选状态
+interface FilterGroup {
+  title: string
+  list: string[]
+}
+
+const emit = defineEmits<{
+  'filter-change': [payload: FilterChangePayload]
+}>()
+
+const props = defineProps<{
+  activeFilters?: FilterChangePayload
+}>()
+
+// 当前激活的筛选条件（数组支持多选）
+const activeArea = ref<string[]>(props.activeFilters?.area || [])
+const activeStar = ref<number[]>(props.activeFilters?.starLevel || [])
+const activePrice = ref<string[]>(props.activeFilters?.priceLevel || [])
+
+// 从父组件同步后续筛选状态变化
 watch(
   () => props.activeFilters,
-  (val) => {
-    activeArea.value = val.area || ''
-    activeStar.value = val.starLevel || 0
-    activePrice.value = val.priceLevel || ''
+  (val: FilterChangePayload | undefined) => {
+    activeArea.value = val?.area || []
+    activeStar.value = val?.starLevel || []
+    activePrice.value = val?.priceLevel || []
   },
   { deep: true }
 )
@@ -26,13 +49,43 @@ const activeName = ref('first')
 
 const handleClick = () => {}
 
-// 当前激活的筛选条件
-const activeArea = ref('')
-const activeStar = ref(0)
-const activePrice = ref('')
+// 工具：数组 toggle（存在则移除，不存在则添加）
+const toggleArray = <T>(arr: T[], item: T): T[] => {
+  return arr.includes(item) ? arr.filter(v => v !== item) : [...arr, item]
+}
+
+// 区域筛选（多选 toggle）
+const onAreaClick = (label: string): void => {
+  activeArea.value = toggleArray(activeArea.value, label)
+  emitChange()
+}
+
+// 星级/价格筛选（多选 toggle）
+const onStarPriceClick = (item: StarPriceItem): void => {
+  if (item.star) {
+    activeStar.value = toggleArray(activeStar.value, item.star)
+  }
+  if (item.price) {
+    activePrice.value = toggleArray(activePrice.value, item.price)
+  }
+  emitChange()
+}
+
+// 高级筛选项点击
+const onFilterItemClick = (title: string, value: string): void => {
+  // 高级筛选暂时只做展示，可后续扩展
+}
+
+const emitChange = (): void => {
+  const filters: FilterChangePayload = {}
+  if (activeArea.value.length) filters.area = activeArea.value
+  if (activeStar.value.length) filters.starLevel = activeStar.value
+  if (activePrice.value.length) filters.priceLevel = activePrice.value
+  emit('filter-change', filters)
+}
 
 // 区域列表
-const topfilterlist = ref([
+const topfilterlist = ref<TabItem[]>([
   { id: 1, name: 'first', label: '热门筛选', list: ['网红打卡', '老字号', '寺庙祈福', '展览演出', '看展', '城市漫步', '泡汤汗蒸', '赏花', '博物馆探秘', '本地美食', '古镇风情'] },
   { id: 2, name: 'second', label: '机场车站', list: ['虹桥国际机场', '浦东国际机场', '上海虹桥站', '上海站', '上海南站', '上海西站', '松江南站', '上海虹桥长途汽车站', '上海长途客运南站', '地铁2号线沿线', '市域机场线站点'] },
   { id: 3, name: 'third', label: '商业区', list: ['南京东路步行街', '京西路', '陆家嘴', '淮海中路', '家汇', '豫园商城', '人民广场', '中山公园', '静安寺', '新天地', '环球港', '苏河湾万象天地'] },
@@ -40,7 +93,7 @@ const topfilterlist = ref([
 ])
 
 // 星级/价格
-const pricelist = ref([
+const pricelist = ref<StarPriceItem[]>([
   { label: '五星(钻级)', star: 5 },
   { label: '四星(钻级)', star: 4 },
   { label: '三星(钻级)', star: 3 },
@@ -53,7 +106,7 @@ const pricelist = ref([
 ])
 
 // 高级筛选
-const filterlist = ref([
+const filterlist = ref<FilterGroup[]>([
   { title: '早餐', list: ['含早餐', '单份早餐', '多份早餐'] },
   { title: '支付方式', list: ['在线付款', '到店付款', '闪住'] },
   { title: '房型', list: ['单床房', '双床房', '多床房', '大床房', '特大床房'] },
@@ -64,47 +117,6 @@ const filterlist = ref([
   { title: '评分', list: ['4.5分以上', '4.0分以上', '3.5分以上'] }
 ])
 
-// 区域筛选
-const onAreaClick = (label) => {
-  if (activeArea.value === label) {
-    activeArea.value = ''
-  } else {
-    activeArea.value = label
-  }
-  emitChange()
-}
-
-// 星级/价格筛选
-const onStarPriceClick = (item) => {
-  if (item.star) {
-    if (activeStar.value === item.star) {
-      activeStar.value = 0
-    } else {
-      activeStar.value = item.star
-    }
-  }
-  if (item.price) {
-    if (activePrice.value === item.price) {
-      activePrice.value = ''
-    } else {
-      activePrice.value = item.price
-    }
-  }
-  emitChange()
-}
-
-// 高级筛选项点击
-const onFilterItemClick = (title, value) => {
-  // 高级筛选暂时只做展示，可后续扩展
-}
-
-const emitChange = () => {
-  const filters = {}
-  if (activeArea.value) filters.area = activeArea.value
-  if (activeStar.value) filters.starLevel = activeStar.value
-  if (activePrice.value) filters.priceLevel = activePrice.value
-  emit('filter-change', filters)
-}
 </script>
 
 <template>
@@ -119,7 +131,7 @@ const emitChange = () => {
             v-for="(k, i) in v.list"
             :key="i"
             size="small"
-            :type="activeArea === k ? 'primary' : 'info'"
+            :type="activeArea.includes(k) ? 'primary' : 'info'"
             plain
             @click="onAreaClick(k)"
           >{{ k }}</el-button>
@@ -134,7 +146,7 @@ const emitChange = () => {
         size="small"
         v-for="(v, i) in pricelist"
         :key="i"
-        :type="(v.star && activeStar === v.star) || (v.price && activePrice === v.price) ? 'primary' : 'info'"
+        :type="(v.star && activeStar.includes(v.star)) || (v.price && activePrice.includes(v.price)) ? 'primary' : 'info'"
         plain
         @click="onStarPriceClick(v)"
       >{{ v.label }}</el-button>

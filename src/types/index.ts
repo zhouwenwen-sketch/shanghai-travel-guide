@@ -81,3 +81,16 @@ export interface LoginResult {
   userId: number
   username: string
 }
+
+/** 酒店筛选状态（所有字段改为数组，支持多选） */
+export interface FilterChangePayload {
+  area?: string[]
+  starLevel?: number[]
+  priceLevel?: string[]
+}
+
+/** 搜索结果条件标签 */
+export interface CriteriaTag {
+  label: string
+  value: string
+}

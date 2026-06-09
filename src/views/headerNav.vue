@@ -5,6 +5,11 @@ import { useRouter } from 'vue-router'  //导入router
 import { Search,Avatar,ArrowDown,User } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
+interface OrderItem {
+  id: number
+  title: string
+}
+
 const router = useRouter()
 const userStore = useUserStore()
 // 解构保持响应式，模板才能随登录状态更新
@@ -12,29 +17,29 @@ const { isLoggedIn, displayName } = storeToRefs(userStore)
 
 const input3 = ref('')
 
-const handleHeaderSearch = () => {
+const handleHeaderSearch = (): void => {
   const kw = input3.value.trim()
   if (kw) {
     router.push({ name: 'search', query: { keyword: kw } })
   }
 }
 
-let Myorder = ref([
+const Myorder = ref<OrderItem[]>([
     { id: 1, title: '酒店订单' },
     { id: 2, title: '火车票订单' },
     { id: 3, title: '飞机票订单' },
     { id: 4, title: '旅游订单' },
     { id: 5, title: '全部订单' }
 ])
-const goToLogin = () => {
+const goToLogin = (): void => {
   router.push('/login')
 }
 
-const goToUserCenter = () => {
+const goToUserCenter = (): void => {
   router.push('/user')
 }
 
-const handleLogout = () => {
+const handleLogout = (): void => {
   userStore.logout()
   router.push('/login')
 }

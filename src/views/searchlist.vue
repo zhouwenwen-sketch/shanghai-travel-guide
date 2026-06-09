@@ -2,28 +2,45 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
+import type { FilterChangePayload } from '@/types'
 
 const router = useRouter()
 
 const destination = ref('')
 const keyword = ref('')
 const guests = ref('')
-const dateRange = ref([])
-const defaultTime1 = [
+const dateRange = ref<[Date, Date] | null>(null)
+const defaultTime1: [Date, Date] = [
   new Date(2000, 1, 1, 12, 0, 0),
   new Date(2000, 2, 1, 8, 0, 0),
 ]
 
+const props = defineProps<{
+  filters?: FilterChangePayload
+}>()
+
+// 暴露内部状态给父组件（index.vue），以便点击筛选时一并携带搜索条件
+defineExpose({
+  destination,
+  keyword,
+  guests,
+  dateRange,
+})
+
 const handleSearch = () => {
-  const query = {}
+  const query: Record<string, string> = {}
   if (destination.value.trim()) query.destination = destination.value.trim()
   if (keyword.value.trim()) query.keyword = keyword.value.trim()
   if (guests.value.trim()) query.guests = guests.value.trim()
-  if (dateRange.value?.length === 2) {
+  if (dateRange.value) {
     const [s, e] = dateRange.value
     query.checkIn = s.toLocaleDateString('zh-CN')
     query.checkOut = e.toLocaleDateString('zh-CN')
   }
+  // 将父组件传递的筛选条件一并带到搜索页（数组用逗号拼接）
+  if (props.filters?.area?.length) query.area = props.filters.area.join(',')
+  if (props.filters?.starLevel?.length) query.starLevel = props.filters.starLevel.join(',')
+  if (props.filters?.priceLevel?.length) query.priceLevel = props.filters.priceLevel.join(',')
   router.push({ name: 'search', query })
 }
 </script>

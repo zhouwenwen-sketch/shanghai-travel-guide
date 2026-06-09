@@ -9,10 +9,10 @@ const api = axios.create({
 api.interceptors.response.use(
   (res) => {
     const body = res.data as ApiResponse
-    if (body.code === 200) return body.data
+    if (body.code === 200) return body.data as any
     return Promise.reject(new Error(body.message || '请求失败'))
   },
-  (err) => {
+  (err: any) => {
     const msg = err.response?.data?.message || err.message || '网络错误'
     return Promise.reject(new Error(msg))
   }

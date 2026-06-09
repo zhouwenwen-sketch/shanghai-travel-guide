@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-let bannerlist = ref([
+
+interface BannerItem {
+  id: number
+  img_url: string
+}
+
+const bannerlist = ref<BannerItem[]>([
     {id:1,img_url:'banner-1.jpg'},
     {id:2,img_url:'banner-2.jpg'},
     {id:3,img_url:'banner-3.jpg'}

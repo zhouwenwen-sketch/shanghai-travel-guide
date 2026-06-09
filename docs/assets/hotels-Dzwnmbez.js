@@ -1,0 +1,1 @@
+import{t as e}from"./api-CPf3TQB8.js";async function t(){return await e.get(`/hotels/recommended`)}async function n(t){return await e.get(`/hotels/${t}`)}async function r(t={}){return await e.get(`/hotels/search`,{params:t})}export{t as n,r,n as t};

@@ -4,6 +4,12 @@ import { storeToRefs } from 'pinia'
 import { Moon, Sunny } from '@element-plus/icons-vue'
 import { useThemeStore } from '@/stores/theme'
 
+interface AsideItem {
+  id: number
+  title: string
+  icon: string
+}
+
 // 初始值：true 表示折叠（菜单窄），false 表示展开（菜单宽）
 const isCollapse = ref(true)
 
@@ -11,7 +17,7 @@ const themeStore = useThemeStore()
 const { isDark } = storeToRefs(themeStore)
 
 // 引入第三方图标
-let asidelist = ref([
+const asidelist = ref<AsideItem[]>([
   { id: 1, title: '酒店', icon: 'icon-jiudian' },
   { id: 2, title: '旅游', icon: 'icon-lvyou' },
   { id: 3, title: '景点', icon: 'icon-jingdian' },
@@ -22,15 +28,15 @@ let asidelist = ref([
   { id: 8, title: '门票', icon: 'icon-menpiao1' },
 ])
 
-const handleOpen = () => {}
-const handleClose = () => {}
+const handleOpen = (): void => {}
+const handleClose = (): void => {}
 </script>
 
 <template>
   <el-aside width="200px" class="aside">
     <div class="aside-list">
       <el-menu
-        default-active="2"
+        default-active="1"
         class="el-menu-vertical-demo"
         :collapse="isCollapse"
         @open="handleOpen"

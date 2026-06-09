@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { searchHotels } from '@/api/hotels'
 import Topfilter from './topfilter.vue'
+import type { Hotel, FilterChangePayload, CriteriaTag } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -11,63 +12,80 @@ const router = useRouter()
 // 分页
 const currentPage = ref(1)
 const pageSize = ref(6)
-const total = ref(0)
 
-const queryKeyword = computed(() => route.query.keyword || '')
-const queryDestination = computed(() => route.query.destination || '')
-const queryCheckIn = computed(() => route.query.checkIn || '')
-const queryCheckOut = computed(() => route.query.checkOut || '')
-const queryGuests = computed(() => route.query.guests || '')
+const queryKeyword = computed(() => String(route.query.keyword || ''))
+const queryDestination = computed(() => String(route.query.destination || ''))
+const queryCheckIn = computed(() => String(route.query.checkIn || ''))
+const queryCheckOut = computed(() => String(route.query.checkOut || ''))
+const queryGuests = computed(() => String(route.query.guests || ''))
 
 const hasCriteria = computed(() => {
   return !!(queryKeyword.value || queryDestination.value || queryCheckIn.value || queryGuests.value)
 })
 
-const filters = reactive({
-  area: '',
-  starLevel: 0,
-  priceLevel: '',
+// 筛选条件（数组，支持多选）
+const parseArrayParam = (val: unknown): string[] => {
+  if (!val) return []
+  return String(val).split(',').filter(Boolean)
+}
+
+const filters = reactive<{ area: string[]; starLevel: number[]; priceLevel: string[] }>({
+  area: parseArrayParam(route.query.area),
+  starLevel: parseArrayParam(route.query.starLevel).map(Number),
+  priceLevel: parseArrayParam(route.query.priceLevel),
 })
 
-const onFilterChange = (f) => {
+const onFilterChange = (f: FilterChangePayload): void => {
   currentPage.value = 1
-  filters.area = f.area || ''
-  filters.starLevel = f.starLevel || 0
-  filters.priceLevel = f.priceLevel || ''
+  filters.area = f.area || []
+  filters.starLevel = f.starLevel || []
+  filters.priceLevel = f.priceLevel || []
 }
 
-const removeFilter = (key) => {
+const removeFilter = (key: 'area' | 'starLevel' | 'priceLevel'): void => {
   currentPage.value = 1
-  if (key === 'area') filters.area = ''
-  if (key === 'starLevel') filters.starLevel = 0
-  if (key === 'priceLevel') filters.priceLevel = ''
+  if (key === 'area') filters.area = []
+  if (key === 'starLevel') filters.starLevel = []
+  if (key === 'priceLevel') filters.priceLevel = []
 }
 
-const starLabel = (lv) => ({ 5: '五星', 4: '四星', 3: '三星', 2: '二星及以下' }[lv] || '')
-const starTagType = (lv) => {
+const starLabel = (lv: number): string => ({ 5: '五星', 4: '四星', 3: '三星', 2: '二星及以下' }[lv] || '')
+const starTagType = (lv: number): 'danger' | 'warning' | 'info' => {
   if (lv === 5) return 'danger'
   if (lv === 4) return 'warning'
   return 'info'
 }
-const priceLabel = (lv) => {
-  const map = { 'low-low': '150以下', 'low': '150-300', 'mid': '300-450', 'high': '450-600', 'luxury': '600以上' }
+const priceLabel = (lv: string): string => {
+  const map: Record<string, string> = { 'low-low': '150以下', 'low': '150-300', 'mid': '300-450', 'high': '450-600', 'luxury': '600以上' }
   return map[lv] || ''
 }
 
 const activeFilterCount = computed(() => {
   let n = 0
-  if (filters.area) n++
-  if (filters.starLevel) n++
-  if (filters.priceLevel) n++
+  if (filters.area.length) n++
+  if (filters.starLevel.length) n++
+  if (filters.priceLevel.length) n++
   return n
 })
 
-const results = ref([])
+const rawResults = ref<Hotel[]>([])
 const loading = ref(false)
+
+// 前端本地多选过滤 —— 同类目下 OR 逻辑
+const filteredResults = computed(() => {
+  return rawResults.value.filter(hotel => {
+    if (filters.area.length && !filters.area.includes(hotel.area)) return false
+    if (filters.starLevel.length && !filters.starLevel.includes(hotel.starLevel)) return false
+    if (filters.priceLevel.length && !filters.priceLevel.includes(hotel.priceLevel)) return false
+    return true
+  })
+})
+
+const total = computed(() => filteredResults.value.length)
 
 const paginatedResults = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
-  return results.value.slice(start, start + pageSize.value)
+  return filteredResults.value.slice(start, start + pageSize.value)
 })
 
 const fetchResults = async () => {
@@ -75,25 +93,18 @@ const fetchResults = async () => {
   currentPage.value = 1
   try {
     const kw = [queryKeyword.value, queryDestination.value].filter(Boolean).join(' ')
-    results.value = await searchHotels({
-      keyword: kw || undefined,
-      area: filters.area || undefined,
-      starLevel: filters.starLevel || undefined,
-      priceLevel: filters.priceLevel || undefined,
-    })
-    total.value = results.value.length
-  } catch (e) {
+    rawResults.value = await searchHotels({ keyword: kw || undefined })
+  } catch (e: unknown) {
     console.error('搜索失败:', e)
   } finally {
     loading.value = false
   }
 }
 
-// 筛选条件变化时重新搜索
-watch([() => filters.area, () => filters.starLevel, () => filters.priceLevel], fetchResults)
+// 关键词/目的地变化时重新拉取数据；筛选变化时前端自动重算（不用重新请求）
 onMounted(fetchResults)
 
-const goDetail = (id) => {
+const goDetail = (id: number): void => {
   router.push({ name: 'hotel-detail', params: { id } })
 }
 
@@ -101,7 +112,7 @@ const goBack = () => {
   router.back()
 }
 
-const criteriaTags = computed(() => {
+const criteriaTags = computed<CriteriaTag[]>(() => {
   const tags = []
   if (queryDestination.value) tags.push({ label: '目的地', value: queryDestination.value })
   if (queryKeyword.value) tags.push({ label: '关键词', value: queryKeyword.value })
@@ -122,12 +133,12 @@ const criteriaTags = computed(() => {
       <div class="result-title-row">
         <h2>
           <template v-if="hasCriteria">
-            <span v-if="queryDestination.value">「{{ queryDestination.value }}」</span>
-            <span v-if="queryKeyword.value">「{{ queryKeyword.value }}」</span>
+            <span v-if="queryDestination">「{{ queryDestination }}」</span>
+            <span v-if="queryKeyword">「{{ queryKeyword }}」</span>
           </template>
           <template v-else>全部酒店</template>
         </h2>
-        <span class="result-count">共 {{ results.length }} 家</span>
+        <span class="result-count">共 {{ filteredResults.length }} 家</span>
       </div>
       <div class="result-criteria" v-if="criteriaTags.length">
         <el-tag v-for="(t, i) in criteriaTags" :key="'c' + i" type="info" size="small">{{ t.label }}：{{ t.value }}</el-tag>
@@ -140,13 +151,13 @@ const criteriaTags = computed(() => {
 
     <div class="active-filters" v-if="activeFilterCount">
       <span class="filter-hint">已选筛选：</span>
-      <el-tag v-if="filters.area" closable size="small" type="primary" @close="removeFilter('area')">{{ filters.area }}</el-tag>
-      <el-tag v-if="filters.starLevel" closable size="small" type="primary" @close="removeFilter('starLevel')">{{ starLabel(filters.starLevel) }}</el-tag>
-      <el-tag v-if="filters.priceLevel" closable size="small" type="primary" @close="removeFilter('priceLevel')">{{ priceLabel(filters.priceLevel) }}</el-tag>
+      <el-tag v-for="a in filters.area" :key="'a-'+a" closable size="small" type="primary" @close="removeFilter('area')">{{ a }}</el-tag>
+      <el-tag v-for="s in filters.starLevel" :key="'s-'+s" closable size="small" type="primary" @close="removeFilter('starLevel')">{{ starLabel(s) }}</el-tag>
+      <el-tag v-for="p in filters.priceLevel" :key="'p-'+p" closable size="small" type="primary" @close="removeFilter('priceLevel')">{{ priceLabel(p) }}</el-tag>
     </div>
 
     <div v-loading="loading" class="result-loading-wrap">
-      <template v-if="results.length">
+      <template v-if="filteredResults.length">
         <div class="result-list">
           <div class="result-item" v-for="hotel in paginatedResults" :key="hotel.id">
             <div class="item-left">
@@ -182,7 +193,7 @@ const criteriaTags = computed(() => {
         </div>
 
         <!-- 分页 -->
-        <div class="result-pagination" v-if="results.length > pageSize">
+        <div class="result-pagination" v-if="filteredResults.length > pageSize">
           <el-pagination
             v-model:current-page="currentPage"
             v-model:page-size="pageSize"

@@ -28,7 +28,7 @@ https://zhouwenwen-sketch.github.io/shanghai-travel-guide/
 | Vue Router 4 (路由守卫 + 懒加载) | Maven |
 | Element Plus (UI 组件库) | Java 21 |
 | Axios (HTTP 请求，拦截器封装) | RESTful API |
-| TypeScript (部分 API 层) | |
+| TypeScript (全项目类型化) | |
 | CSS3 (Flex / Grid / CSS 变量) | |
 
 ## 项目结构
@@ -38,18 +38,19 @@ my-project/
 ├── public/                 # 静态资源（favicon、图片）
 ├── src/
 │   ├── api/                # API 封装（axios 实例 + 各模块接口）
-│   │   ├── index.js        #   axios 实例（响应拦截器、错误处理）
-│   │   ├── hotels.js       #   酒店相关接口
-│   │   ├── favorites.js    #   收藏接口（含 localStorage 兜底）
-│   │   ├── history.js      #   浏览历史接口（含 localStorage 兜底）
-│   │   └── user.js         #   用户登录注册（含 mock 兜底）
+│   │   ├── index.ts        #   axios 实例（响应拦截器、错误处理）
+│   │   ├── hotels.ts       #   酒店相关接口
+│   │   ├── favorites.ts    #   收藏接口（含 localStorage 兜底）
+│   │   ├── history.ts      #   浏览历史接口（含 localStorage 兜底）
+│   │   └── user.ts         #   用户登录注册（含 mock 兜底）
 │   ├── assets/             # 样式、字体图标
 │   ├── components/         # 可复用组件
-│   ├── data/               # mock 数据（hotels.js 含 22 家酒店数据）
+│   ├── types/              # 全局 TypeScript 类型定义
+│   │   └── index.ts        #   Hotel / User / Room 等全部类型接口
 │   ├── router/             # 路由配置（路由守卫）
 │   ├── stores/             # Pinia 状态管理
-│   │   ├── theme.js        #   深色/浅色主题
-│   │   └── user.js         #   用户登录态
+│   │   ├── theme.ts        #   深色/浅色主题
+│   │   └── user.ts         #   用户登录态
 │   ├── views/              # 页面组件
 │   │   ├── index.vue       #   首页
 │   │   ├── login.vue       #   登录页
@@ -63,7 +64,7 @@ my-project/
 │   │   ├── searchlist.vue  #   搜索框
 │   │   └── topfilter.vue   #   筛选区域
 │   ├── App.vue
-│   └── main.js
+│   └── main.ts
 ├── travel-backend/         # Spring Boot 后端
 │   └── src/main/java/
 │       ├── controller/     #   RESTful 控制器
@@ -156,6 +157,26 @@ Vue Router 的 `beforeEach` 守卫配合 Pinia 用户状态，控制个人中心
 ## 在线访问
 
 https://zhouwenwen-sketch.github.io/shanghai-travel-guide/
+
+## 近期优化：全项目 TypeScript 类型化
+
+对项目全部视图组件进行了系统性 TypeScript 类型增强，覆盖 10 个 `.vue` 文件，实现了 `vue-tsc --noEmit` 零类型错误。
+
+### 改造范围
+
+| 阶段 | 文件 | 关键改进 |
+|------|------|---------|
+| 一：核心组件 | hotel-detail.vue, search-result.vue, recommend-list.vue, user-center.vue | 数据 ref 泛型化、函数参数/返回值类型约束、catch 类型安全、模板 ref 自动解包 |
+| 二：子组件 | topfilter.vue, searchlist.vue, login.vue | defineEmits/defineProps 泛型模式、`Record<string, string>` 动态对象、日期范围元组类型 |
+| 三：类型质量 | types/index.ts, banner.vue, headerNav.vue, navMenu.vue | 提取共享类型、类型守卫过滤 null、接口定义替代隐式 any |
+
+### 主要收益
+
+- **编译期捕获**: `hotel.name` 等属性访问不再有运行时 `undefined` 风险
+- **IDE 智能提示**: 所有 `ref`、`computed`、函数参数都有完整类型推断和补全
+- **安全异常处理**: 全局 `catch (e: unknown)` 模式，必须 `e instanceof Error` 收窄后才能访问 `e.message`
+- **共享类型沉淀**: `FilterChangePayload`、`CriteriaTag` 等跨组件类型统一管理
+- **零编译错误**: `vue-tsc --strict` 模式下全项目通过
 
 ## 作者
 
