@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 
 const isLogin = ref(true)
@@ -18,12 +19,21 @@ const handleSubmit = async (): Promise<void> => {
     } else {
       await userStore.register(loginForm.value.username, loginForm.value.password)//等待注册完成
     }
-    router.push('/')//成功后才跳转
+    await router.replace(safeRedirectTarget())//成功后才跳转
   } catch (e: unknown) {
     if (e instanceof Error) alert(e.message)//捕获错误并提示
   } finally {
     submitting.value = false// 无论成功失败都关闭 loading
   }
+}
+
+const safeRedirectTarget = (): string => {
+  const redirect = Array.isArray(route.query.redirect)
+    ? route.query.redirect[0]
+    : route.query.redirect
+  return typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')
+    ? redirect
+    : '/'
 }
 
 const toggleMode = (): void => {

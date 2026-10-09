@@ -1,39 +1,56 @@
 import { defineStore } from 'pinia'
-import type { User } from '@/types'
+import type { UserRole } from '@/types'
 import { login as loginApi, register as registerApi } from '@/api/user'
-
-const LS_USER_ID = 'user_id'
-const LS_USERNAME = 'username'
 
 interface UserState {
   userId: number | null
   username: string
-  isLoggedIn: boolean
+  accessToken: string
+  expiresAt: string
+  role: UserRole
 }
 
 export const useUserStore = defineStore('user', {
   state: (): UserState => ({
-    userId: localStorage.getItem(LS_USER_ID) ? Number(localStorage.getItem(LS_USER_ID)) : null,
-    username: localStorage.getItem(LS_USERNAME) || '',
-    isLoggedIn: !!localStorage.getItem(LS_USER_ID),
+    userId: null,
+    username: '',
+    accessToken: '',
+    expiresAt: '',
+    role: 'USER',
   }),
 
   getters: {
+    isLoggedIn: (state): boolean => Boolean(
+      state.userId !== null &&
+      state.accessToken &&
+      state.expiresAt &&
+      Date.parse(state.expiresAt) > Date.now()
+    ),
     displayName: (state): string => state.username || '游客',
-    isLogin: (state): boolean => state.isLoggedIn,
+    isAdmin: (state): boolean => state.role === 'ADMIN',
   },
 
   actions: {
+    getValidAccessToken(): string | null {
+      if (!this.isLoggedIn) {
+        if (this.userId !== null || this.username || this.accessToken || this.expiresAt) {
+          this.logout()
+        }
+        return null
+      }
+      return this.accessToken
+    },
+
+    clearExpiredSession(): void {
+      this.getValidAccessToken()
+    },
+
     async login(username: string, password: string): Promise<void> {
       if (!username?.trim() || !password) {
         throw new Error('请输入用户名和密码')
       }
       const data = await loginApi(username.trim(), password)
-      this.userId = data.userId
-      this.username = data.username
-      this.isLoggedIn = true
-      localStorage.setItem(LS_USER_ID, String(data.userId))
-      localStorage.setItem(LS_USERNAME, data.username)
+      this.applySession(data)
     },
 
     async register(username: string, password: string): Promise<void> {
@@ -41,19 +58,28 @@ export const useUserStore = defineStore('user', {
         throw new Error('请输入用户名和密码')
       }
       const data = await registerApi(username.trim(), password)
-      this.userId = data.userId
-      this.username = data.username
-      this.isLoggedIn = true
-      localStorage.setItem(LS_USER_ID, String(data.userId))
-      localStorage.setItem(LS_USERNAME, data.username)
+      this.applySession(data)
+    },
+
+    applySession(data: import('@/types').LoginResult): void {
+      this.userId = data.user.userId
+      this.username = data.user.username
+      this.accessToken = data.accessToken
+      this.expiresAt = data.expiresAt
+      this.role = data.user.role || 'USER'
     },
 
     logout(): void {
       this.userId = null
       this.username = ''
-      this.isLoggedIn = false
-      localStorage.removeItem(LS_USER_ID)
-      localStorage.removeItem(LS_USERNAME)
+      this.accessToken = ''
+      this.expiresAt = ''
+      this.role = 'USER'
     },
+  },
+
+  persist: {
+    key: 'user',
+    pick: ['userId', 'username', 'accessToken', 'expiresAt', 'role'],
   },
 })

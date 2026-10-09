@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, Star, StarFilled, Location, Phone } from '@element-plus/icons-vue'
 import { getHotelDetail } from '@/api/hotels'
 import { checkFavorite, addFavorite, removeFavorite } from '@/api/favorites'
 import { addHistory } from '@/api/history'
+import { createBooking } from '@/api/bookings'
 import { useUserStore } from '@/stores/user'
 import type { Hotel, Room } from '@/types'
 
@@ -16,18 +18,32 @@ const hotel = ref<Hotel | null>(null)
 const isFav = ref(false)
 const loading = ref(true)
 const activeTab = ref<'rooms' | 'reviews'>('rooms')
+const bookingDialog = ref(false)
+const bookingSubmitting = ref(false)
+const bookingIdempotencyKey = ref('')
+const selectedRoom = ref<Room | null>(null)
+const localDateAfter = (days: number) => {
+  const date = new Date()
+  date.setDate(date.getDate() + days)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+const newIdempotencyKey = () => crypto.randomUUID()
+const bookingForm = reactive({ checkIn: localDateAfter(1), checkOut: localDateAfter(2), guestCount: 1, contactName: '', contactPhone: '' })
 
 const fetchHotel = async () => {
   loading.value = true
   try {
     hotel.value = await getHotelDetail(route.params.id as string)
     // 记录浏览历史
-    if (userStore.userId && hotel.value) {
-      addHistory(userStore.userId, hotel.value.id).catch(() => {})
+    if (userStore.isLoggedIn && hotel.value) {
+      addHistory(hotel.value.id).catch(() => {})
     }
     // 检查是否已收藏
-    if (userStore.userId && hotel.value) {
-      checkFavorite(userStore.userId, hotel.value.id).then(v => { isFav.value = v }).catch(() => {})
+    if (userStore.isLoggedIn && hotel.value) {
+      checkFavorite(hotel.value.id).then(v => { isFav.value = v }).catch(() => {})
     }
   } catch (e: unknown) {
     console.error('加载酒店详情失败:', e)
@@ -50,17 +66,17 @@ const goBack = (): void => {
 }
 
 const toggleFav = async (): Promise<void> => {
-  if (!hotel.value || !userStore.userId) {
+  if (!hotel.value || !userStore.isLoggedIn) {
     alert('请先登录')
     router.push('/login')
     return
   }
   try {
     if (isFav.value) {
-      await removeFavorite(userStore.userId, hotel.value.id)
+      await removeFavorite(hotel.value.id)
       isFav.value = false
     } else {
-      await addFavorite(userStore.userId, hotel.value.id)
+      await addFavorite(hotel.value.id)
       isFav.value = true
     }
   } catch (e: unknown) {
@@ -70,7 +86,26 @@ const toggleFav = async (): Promise<void> => {
 }
 
 const handleBook = (room: Room): void => {
-  alert(`已选择「${room.name}」，￥${room.price}/晚\n\n下单功能开发中...`)
+  if (!userStore.isLoggedIn) {
+    router.push({ path: '/login', query: { redirect: route.fullPath } })
+    return
+  }
+  selectedRoom.value = room
+  bookingIdempotencyKey.value = newIdempotencyKey()
+  bookingDialog.value = true
+}
+const submitBooking = async (): Promise<void> => {
+  if (!hotel.value || bookingSubmitting.value) return
+  bookingIdempotencyKey.value ||= newIdempotencyKey()
+  bookingSubmitting.value = true
+  try {
+    const result = await createBooking({ hotelId: hotel.value.id, ...bookingForm }, bookingIdempotencyKey.value)
+    bookingDialog.value = false
+    bookingIdempotencyKey.value = ''
+    ElMessage.success(`预订记录已创建，合计 ￥${result.totalPrice}`)
+    router.push('/bookings')
+  } catch (e) { ElMessage.error(e instanceof Error ? e.message : '创建预订失败') }
+  finally { bookingSubmitting.value = false }
 }
 </script>
 
@@ -146,7 +181,7 @@ const handleBook = (room: Room): void => {
           <div class="review-summary">
             <span class="review-big-score">{{ hotel.rating }}</span>
             <span class="review-desc-text">{{ hotel.reviewDesc }}</span>
-            <span class="review-total">共 {{ hotel.reviewCount }} 条真实住客点评</span>
+            <span class="review-total">共 {{ hotel.reviewCount }} 条演示/用户评价</span>
           </div>
           <div class="review-list">
             <div class="review-item" v-for="r in hotel.reviews" :key="r.id">
@@ -177,6 +212,17 @@ const handleBook = (room: Room): void => {
       </div>
       <el-button type="primary" size="large" @click="activeTab = 'rooms'">查看可订房型</el-button>
     </div>
+    <el-dialog v-model="bookingDialog" title="创建预订记录" width="min(520px, 94vw)">
+      <el-alert title="本功能不包含真实支付、库存锁定或第三方确认。最终金额按酒店展示价 × 晚数由服务端计算。" type="warning" :closable="false" show-icon />
+      <p class="selected-room">已选展示房型：{{ selectedRoom?.name }}（房型仅供展示，不参与库存）</p>
+      <el-form label-position="top">
+        <div class="booking-date-row"><el-form-item label="入住日期" required><el-date-picker v-model="bookingForm.checkIn" type="date" value-format="YYYY-MM-DD" /></el-form-item><el-form-item label="离店日期" required><el-date-picker v-model="bookingForm.checkOut" type="date" value-format="YYYY-MM-DD" /></el-form-item></div>
+        <el-form-item label="入住人数" required><el-input-number v-model="bookingForm.guestCount" :min="1" :max="10" /></el-form-item>
+        <el-form-item label="联系人" required><el-input v-model="bookingForm.contactName" maxlength="80" /></el-form-item>
+        <el-form-item label="联系电话" required><el-input v-model="bookingForm.contactPhone" maxlength="30" /></el-form-item>
+      </el-form>
+      <template #footer><el-button :disabled="bookingSubmitting" @click="bookingDialog=false">取消</el-button><el-button type="primary" :loading="bookingSubmitting" :disabled="bookingSubmitting" @click="submitBooking">确认创建</el-button></template>
+    </el-dialog>
   </div>
 
   <!-- 酒店不存在 -->
@@ -495,4 +541,5 @@ const handleBook = (room: Room): void => {
   align-items: center;
   min-height: 60vh;
 }
+.selected-room{margin:14px 0;color:#606266}.booking-date-row{display:flex;gap:16px}.booking-date-row>*{flex:1}@media(max-width:700px){.hotel-detail{width:auto;padding:12px 12px 100px}.detail-header{flex-direction:column}.detail-header-left{flex:auto;width:100%;height:220px}.hotel-title-row{flex-wrap:wrap}.room-item{align-items:flex-start;gap:8px;flex-wrap:wrap}.booking-date-row{flex-direction:column;gap:0}}
 </style>

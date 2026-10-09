@@ -1,21 +1,9 @@
 import { defineStore } from 'pinia'
 import type { ThemeMode } from '@/types'
 
-const STORAGE_KEY = 'app-theme'
-
-function readStoredMode(): ThemeMode {
-  if (typeof localStorage === 'undefined') return 'light'
-  const v = localStorage.getItem(STORAGE_KEY)
-  return v === 'dark' ? 'dark' : 'light'
-}
-
-interface ThemeState {
-  mode: ThemeMode
-}
-
 export const useThemeStore = defineStore('theme', {
-  state: (): ThemeState => ({
-    mode: readStoredMode(),
+  state: () => ({
+    mode: 'light' as ThemeMode,
   }),
 
   getters: {
@@ -32,11 +20,10 @@ export const useThemeStore = defineStore('theme', {
         root.classList.remove('dark')
         root.style.colorScheme = 'light'
       }
-      localStorage.setItem(STORAGE_KEY, this.mode)
     },
 
     init(): void {
-      this.mode = readStoredMode()
+      // 持久化状态已被插件自动水合，只需应用到 DOM
       this.apply()
     },
 
@@ -48,5 +35,10 @@ export const useThemeStore = defineStore('theme', {
     toggle(): void {
       this.setMode(this.mode === 'dark' ? 'light' : 'dark')
     },
+  },
+
+  persist: {
+    key: 'app-theme',
+    pick: ['mode'],
   },
 })

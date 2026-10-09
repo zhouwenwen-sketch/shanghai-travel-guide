@@ -1,0 +1,1 @@
+import{c as e,l as t,s as n}from"./use-aria-BHipPF-H.js";import{Ln as r,Tn as i}from"./_plugin-vue_export-helper-XwTtl86d.js";function a(r,i){return e(n(r,i,t),r+``)}function o(e){return r(e)&&i(e)}export{a as n,o as t};

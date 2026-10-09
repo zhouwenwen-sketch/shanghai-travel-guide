@@ -3,17 +3,28 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
 import type { FilterChangePayload } from '@/types'
+import { validateSearchDates } from '@/utils/search-dates'
 
 const router = useRouter()
 
 const destination = ref('')
 const keyword = ref('')
 const guests = ref('')
-const dateRange = ref<[Date, Date] | null>(null)
-const defaultTime1: [Date, Date] = [
-  new Date(2000, 1, 1, 12, 0, 0),
-  new Date(2000, 2, 1, 8, 0, 0),
-]
+const checkIn = ref('')
+const checkOut = ref('')
+const dateError = ref('')
+const validateDates = (): boolean => {
+  if (!checkIn.value && !checkOut.value) {
+    dateError.value = ''
+    return true
+  }
+  if (!validateSearchDates(checkIn.value, checkOut.value)) {
+    dateError.value = '请选择完整日期，且退房日期须晚于入住日期'
+    return false
+  }
+  dateError.value = ''
+  return true
+}
 
 const props = defineProps<{
   filters?: FilterChangePayload
@@ -24,18 +35,20 @@ defineExpose({
   destination,
   keyword,
   guests,
-  dateRange,
+  checkIn,
+  checkOut,
+  validateDates,
 })
 
 const handleSearch = () => {
+  if (!validateDates()) return
   const query: Record<string, string> = {}
   if (destination.value.trim()) query.destination = destination.value.trim()
   if (keyword.value.trim()) query.keyword = keyword.value.trim()
   if (guests.value.trim()) query.guests = guests.value.trim()
-  if (dateRange.value) {
-    const [s, e] = dateRange.value
-    query.checkIn = s.toLocaleDateString('zh-CN')
-    query.checkOut = e.toLocaleDateString('zh-CN')
+  if (checkIn.value && checkOut.value) {
+    query.checkIn = checkIn.value
+    query.checkOut = checkOut.value
   }
   // 将父组件传递的筛选条件一并带到搜索页（数组用逗号拼接）
   if (props.filters?.area?.length) query.area = props.filters.area.join(',')
@@ -55,14 +68,13 @@ const handleSearch = () => {
         </div>
         <div class="searchlist-item">
             <div class="search-box">
-                <label>入住时间/退房时间</label>
-                <el-date-picker
-                    v-model="dateRange"
-                    type="datetimerange"
-                    start-placeholder="Start Date"
-                    end-placeholder="End Date"
-                    :default-time="defaultTime1"
-                />
+                <label for="check-in">入住日期 / 退房日期</label>
+                <div class="date-inputs">
+                    <input id="check-in" v-model="checkIn" type="date" aria-label="入住日期" @input="dateError = ''">
+                    <span>至</span>
+                    <input v-model="checkOut" type="date" aria-label="退房日期" :min="checkIn || undefined" @input="dateError = ''">
+                </div>
+                <span v-if="dateError" class="date-error" role="alert">{{ dateError }}</span>
             </div>
         </div>
         <div class="searchlist-item">
@@ -85,5 +97,7 @@ const handleSearch = () => {
 </template>
 
 <style scoped>
-
+.date-inputs { display: flex; align-items: center; gap: 4px; }
+.date-inputs input { min-width: 0; width: 130px; padding: 6px 2px; font: inherit; }
+.date-error { display: block; color: var(--el-color-danger); font-size: 12px; }
 </style>

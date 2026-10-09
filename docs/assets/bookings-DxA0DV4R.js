@@ -1,0 +1,1 @@
+import{t as e}from"./api-CRs2FH0K.js";var t=(t,n)=>e.post(`/bookings`,t,{headers:{"Idempotency-Key":n}}),n=()=>e.get(`/bookings`),r=(t,n)=>e.post(`/bookings/${t}/cancel`,void 0,{headers:{"If-Match":`"${n}"`}});export{t as n,n as r,r as t};

@@ -13,7 +13,7 @@ interface OrderItem {
 const router = useRouter()
 const userStore = useUserStore()
 // 解构保持响应式，模板才能随登录状态更新
-const { isLoggedIn, displayName } = storeToRefs(userStore)
+const { isLoggedIn, displayName, isAdmin } = storeToRefs(userStore)
 
 const input3 = ref('')
 
@@ -38,6 +38,10 @@ const goToLogin = (): void => {
 const goToUserCenter = (): void => {
   router.push('/user')
 }
+const goBookings = (): void => { router.push('/bookings') }
+const goItineraries = (): void => { router.push('/itineraries') }
+const goAdminPois = (): void => { router.push('/admin/pois') }
+const goAdminAnalytics = (): void => { router.push('/admin/analytics') }
 
 const handleLogout = (): void => {
   userStore.logout()
@@ -71,6 +75,10 @@ const handleLogout = (): void => {
             <template v-else>
               <span class="user-welcome">你好，{{ displayName }}</span>
               <el-link :icon="User" @click="goToUserCenter">个人中心</el-link>
+              <el-link @click="goBookings">我的预订</el-link>
+              <el-link @click="goItineraries">我的行程</el-link>
+              <el-link v-if="isAdmin" @click="goAdminPois">内容管理</el-link>
+              <el-link v-if="isAdmin" @click="goAdminAnalytics">访问统计</el-link>
               <el-link type="danger" @click="handleLogout">退出</el-link>
             </template>
             <el-link>

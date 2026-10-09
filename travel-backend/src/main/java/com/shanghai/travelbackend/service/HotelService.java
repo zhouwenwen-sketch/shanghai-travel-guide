@@ -1,11 +1,14 @@
 package com.shanghai.travelbackend.service;
 
-import com.shanghai.travelbackend.entity.Hotel;
+import com.shanghai.travelbackend.dto.HotelDetailResponse;
+import com.shanghai.travelbackend.dto.HotelListItemResponse;
+
 import java.util.List;
 
 public interface HotelService {
-    List<Hotel> getAllHotels();
-    List<Hotel> getRecommendedHotels();
-    Hotel getHotelDetail(Long id);
-    List<Hotel> search(String keyword, String area, Integer starLevel, Integer minPrice, Integer maxPrice);
+    List<HotelListItemResponse> getAllHotels();
+    List<HotelListItemResponse> getRecommendedHotels();
+    HotelDetailResponse getHotelDetail(Long id);
+    List<HotelListItemResponse> search(
+            String keyword, String area, Integer starLevel, Integer minPrice, Integer maxPrice);
 }

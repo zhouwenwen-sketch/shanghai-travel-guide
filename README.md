@@ -1,183 +1,185 @@
-# 上海旅游攻略
+# 上海旅游攻略平台
 
-基于 Vue 3 + Pinia + Element Plus 的旅游信息展示平台。
+面向赴沪游客的旅游攻略平台，基于 Vue 3、TypeScript 和 NestJS 构建，提供酒店检索、旅游地点浏览、收藏、预订记录和手动行程编排。项目围绕首屏交互和酒店查询完成性能优化，并实现匿名首页访问统计，支持管理端查看 PV、UV、Session 和每日趋势。
 
-## 在线预览
-
-https://zhouwenwen-sketch.github.io/shanghai-travel-guide/
-
-> 线上为纯前端演示版，登录使用演示账号 `demo / 123456`。
-> 本地启动后端可体验完整功能（注册、数据持久化）。
-
-## 功能特点
-
-- **酒店推荐**：展示上海热门酒店信息，包含图片、名称、位置、价格、评分
-- **酒店详情**：查看房型、点评、设施标签等详细信息
-- **搜索筛选**：按关键词、位置区域、星级、价格区间筛选酒店
-- **用户系统**：登录/注册，收藏酒店，浏览历史记录
-- **深色主题**：支持深色/浅色主题切换，CSS 变量管理全局样式
-- **响应式布局**：Flex + Grid 布局，适配不同屏幕
+当前前端默认连接 `server/` 中的 NestJS 服务。`travel-backend/` 保留原 Spring Boot 实现，迁移背景见 [Node.js 迁移计划](./plans/nodejs-migration.md)。
 
 ## 技术栈
 
-| 前端 | 后端 |
-|------|------|
-| Vue 3 (Composition API + `<script setup>`) | Spring Boot 3.2.5 |
-| Vite 8 (构建工具) | Spring Data JPA |
-| Pinia (状态管理) | MySQL |
-| Vue Router 4 (路由守卫 + 懒加载) | Maven |
-| Element Plus (UI 组件库) | Java 21 |
-| Axios (HTTP 请求，拦截器封装) | RESTful API |
-| TypeScript (全项目类型化) | |
-| CSS3 (Flex / Grid / CSS 变量) | |
+| 层级 | 技术 |
+| --- | --- |
+| 前端 | Vue 3、TypeScript、Vite 8 |
+| 状态与路由 | Pinia、Vue Router（Hash 路由） |
+| UI 与请求 | Element Plus、Axios |
+| 后端 | NestJS 11、TypeScript、class-validator |
+| 数据库 | MySQL、Prisma 7、MariaDB 驱动适配器 |
+| 认证 | Bearer JWT、BCrypt、USER / ADMIN 角色 |
+| 测试 | 前端 Node.js Test Runner；后端 Jest、Supertest |
 
-## 项目结构
+## 主要功能
 
+- **酒店检索**：推荐列表、关键词搜索、区域/星级/价格组合筛选、稳定排序及服务端分页；查看酒店、房型、点评和设施信息。
+- **旅游内容**：景点、美食、商圈的分页检索与详情；统一搜索展示酒店和 POI，提供坐标示意图。
+- **用户功能**：注册登录、个人中心、酒店收藏、浏览历史，以及登录守卫和过期会话清理。
+- **预订记录**：创建、查看和取消演示预订；创建使用幂等键，取消使用版本校验。
+- **行程编排**：创建、编辑和删除多日行程，手动安排酒店、景点、餐厅、活动及备注，可关联酒店或 POI，并在前端检查日期范围和时间冲突。
+- **后台管理**：管理员管理 POI 内容、查看匿名首页访问统计；后端校验管理员权限。
+- **交互体验**：深浅主题切换、路由懒加载，以及部分列表页的加载、空数据和错误提示。
+
+## 项目亮点
+
+### 首屏渲染优化
+
+通过浏览器 Performance 面板定位首页主线程长任务，将筛选区重构为按需渲染的标签页，并以原生日期输入替代完整日期时间选择器。
+
+按开发阶段的人工复测记录，相关长任务由 **2.04 s** 降至 **0.66～0.78 s**，降幅约 **62%～68%（约 65%）**。该指标是主线程任务耗时，不等同于首屏加载时间、FCP 或 LCP；具体结果受设备与测试环境影响。
+
+### 酒店查询优化
+
+将全量查询和前端筛选改为服务端组合筛选、稳定排序与分页，并基于 `EXPLAIN ANALYZE` 引入 `(area, star_level, id)` 和 `(price, id)` 复合索引。
+
+在 **5 万条测试数据**、同机同服务进程、相同索引条件下，每个场景预热 5 次、采样 20 次；新接口每页返回 24 条：
+
+| 场景 | 旧接口 p95 | 分页接口 p95 |
+| --- | ---: | ---: |
+| 全部酒店 | 1706.6 ms | 20.8 ms |
+| 区域 + 星级 | 82.9 ms | 11.8 ms |
+| 价格区间 | 674.7 ms | 12.3 ms |
+| 模糊关键词 | 2113.7 ms | 28.7 ms |
+
+“全部酒店”场景 p95 下降 **98.8%**。这组结果主要体现查询、序列化和传输范围收敛的收益，不能全部归因于索引。5 万条是基准测试数据量，不代表线上用户或真实酒店数量。
+
+测试环境、执行计划和结果见 [性能实测](./server/BENCHMARK_RESULTS.md)，复现步骤见 [基准测试指南](./server/BENCHMARK.md)。
+
+### 匿名首页访问统计
+
+- 路由 `afterEach` 在成功进入首页时上报；首页内部 query/hash 变化不重复计数，上报失败不阻塞页面。
+- 使用 `eventId` 唯一约束实现幂等，同一事件重复提交不会重复计入 PV。
+- `visitorId` 保存在 localStorage，`sessionId` 保存在标签页 sessionStorage；分别用于匿名 UV 和 Session 去重。
+- 使用服务端接收时间，按 `Asia/Shanghai` 自然日统计；无访问日期补零，区间 UV/Session 在整个区间去重。
+- 管理页面 `#/admin/analytics` 提供今日指标和近 **7/30 天**趋势；管理接口支持最长 **90 天**的日期范围查询。
+- 管理页使用请求序号处理快速切换范围产生的响应竞态，防止旧请求覆盖新结果。
+- 埋点记录保存事件、访客、会话标识及时间，不采集 IP、账号、User-Agent 或搜索内容。匿名标识不等于真实人数，清理浏览器存储会影响去重。
+
+## 本地启动
+
+推荐使用 **Node.js 24 LTS** 和 **MySQL 8**。当前 NestJS 路径不需要 Java；运行历史 Spring Boot 服务时才需要 Java 21。
+
+以下命令以 `my-project/` 为起始目录。
+
+### 1. 创建开发数据库
+
+```sql
+CREATE DATABASE travel_node
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
 ```
-my-project/
-├── public/                 # 静态资源（favicon、图片）
-├── src/
-│   ├── api/                # API 封装（axios 实例 + 各模块接口）
-│   │   ├── index.ts        #   axios 实例（响应拦截器、错误处理）
-│   │   ├── hotels.ts       #   酒店相关接口
-│   │   ├── favorites.ts    #   收藏接口（含 localStorage 兜底）
-│   │   ├── history.ts      #   浏览历史接口（含 localStorage 兜底）
-│   │   └── user.ts         #   用户登录注册（含 mock 兜底）
-│   ├── assets/             # 样式、字体图标
-│   ├── components/         # 可复用组件
-│   ├── types/              # 全局 TypeScript 类型定义
-│   │   └── index.ts        #   Hotel / User / Room 等全部类型接口
-│   ├── router/             # 路由配置（路由守卫）
-│   ├── stores/             # Pinia 状态管理
-│   │   ├── theme.ts        #   深色/浅色主题
-│   │   └── user.ts         #   用户登录态
-│   ├── views/              # 页面组件
-│   │   ├── index.vue       #   首页
-│   │   ├── login.vue       #   登录页
-│   │   ├── hotel-detail.vue#   酒店详情页
-│   │   ├── search-result.vue#  搜索结果页（含分页）
-│   │   ├── recommend-list.vue# 推荐列表
-│   │   ├── user-center.vue #   个人中心（收藏、历史）
-│   │   ├── banner.vue      #   轮播图
-│   │   ├── headerNav.vue   #   顶部导航
-│   │   ├── navMenu.vue     #   侧边菜单
-│   │   ├── searchlist.vue  #   搜索框
-│   │   └── topfilter.vue   #   筛选区域
-│   ├── App.vue
-│   └── main.ts
-├── travel-backend/         # Spring Boot 后端
-│   └── src/main/java/
-│       ├── controller/     #   RESTful 控制器
-│       ├── entity/         #   实体类（Hotel, User, Favorite...）
-│       ├── repository/     #   JPA 数据访问
-│       └── service/        #   业务逻辑
-├── docs/                   # 构建输出（GitHub Pages 部署）
-├── index.html
-├── vite.config.js          # Vite 配置（代理 / 别名 / 自动导入）
-└── package.json
+
+准备一个可访问该数据库的本地 MySQL 账户。
+
+### 2. 配置后端
+
+```powershell
+cd server
+npm ci
+Copy-Item .env.example .env.local
 ```
 
-## 快速开始
+若已有 `.env.local`，直接编辑现有配置。填写以下变量：
 
-### 环境要求
+| 变量 | 用途 |
+| --- | --- |
+| `DATABASE_URL` | Prisma CLI 连接串，格式为 `mysql://用户名:密码@127.0.0.1:3306/travel_node` |
+| `DATABASE_HOST` / `DATABASE_PORT` | 服务运行时的数据库地址，通常为 `127.0.0.1` / `3306` |
+| `DATABASE_USER` / `DATABASE_PASSWORD` / `DATABASE_NAME` | 服务运行时的数据库账户及库名 |
+| `JWT_SECRET` | 至少 32 字符的随机密钥，替换示例值 |
+| `JWT_TTL_SECONDS` | Token 有效期，示例为 `7200` 秒 |
+| `PORT` | 后端端口，默认 `8082` |
+| `CORS_ALLOWED_ORIGINS` | 允许的前端来源，默认 `http://localhost:8080` |
 
-- Node.js 18+
-- npm 9+
-- Java 21（后端）
-- Maven（后端，或用项目自带的 mvnw.cmd）
+`DATABASE_URL` 与拆分的 `DATABASE_*` 配置必须指向同一数据库；连接串中的特殊字符需要 URL 编码。真实凭据只保存在本地环境配置中。
 
-### 1. 启动前端（开发模式）
+### 3. 初始化并启动后端
 
-```bash
-# 安装依赖
-npm install
+仅对新建的本地演示数据库执行：
 
-# 启动开发服务器（默认 http://localhost:8080）
+```powershell
+npm run db:setup
+npm run start:dev
+```
+
+`db:setup` 依次同步 Prisma Schema、生成客户端并执行种子脚本。**当前种子脚本包含酒店恢复逻辑，会修改已有酒店数据，不能当作无副作用的重复初始化命令。** 已有数据库请先备份并核对 Schema，按需单独执行 `npm run db:push` 和 `npm run prisma:generate`。
+
+后端默认监听 `http://127.0.0.1:8082`，健康检查为 `GET /health`。
+
+### 4. 启动前端
+
+另开终端，在 `my-project/` 下执行：
+
+```powershell
+npm ci
+Copy-Item .env.example .env.local
 npm run dev
 ```
 
-### 2. 启动后端（可选，用于完整功能）
+若已有 `.env.local`，保留并检查其中的 `VITE_API_BASE_URL=/api`。浏览器访问 `http://localhost:8080`，Vite 将 `/api` 转发至 `http://127.0.0.1:8082`，端口以 `vite.config.ts` 为准。
 
-```bash
-# 先创建 MySQL 数据库
-# mysql -u root -p -e "CREATE DATABASE travel_db;"
+注册用户默认为 `USER`；后台页面需要已有的 `ADMIN` 账户，当前没有可视化角色管理功能。
 
-# 启动后端（第一次运行会自动下载依赖，需等待）
-cd travel-backend
-.\mvnw.cmd spring-boot:run
+## 构建与验证
 
-# 后端运行在 http://localhost:8081
-```
+在 `my-project/` 下：
 
-> 如果后端未启动，前端会自动使用 mock 数据和 localStorage 兜底，不影响页面展示。
-
-### 3. 生产构建
-
-```bash
+```powershell
+npm test
 npm run build
 ```
 
-构建产物输出到 `docs/` 目录，静态文件即可部署。
+在 `my-project/server/` 下：
 
-## 部署到 GitHub Pages（常用命令）
-
-```bash
-# 三步走：构建 → 提交 → 推送
+```powershell
+npm run typecheck
+npm test
 npm run build
-git add .
-git commit -m "update"
-git push origin main
 ```
 
-推送后等待 1-2 分钟，访问 https://zhouwenwen-sketch.github.io/shanghai-travel-guide/
+后端安装依赖后需先生成 Prisma 客户端；部分集成验证需要按测试配置准备数据库。`test:e2e` 脚本尚未匹配到对应测试文件，当前不列为可通过的检查项。以上命令的运行结果以具体执行记录为准。
 
-> **注意**：如果遇到网络问题，配置 Git 代理：
-> ```bash
-> git config --global http.proxy http://127.0.0.1:7890
-> git config --global https.proxy http://127.0.0.1:7890
-> git push origin main
-> git config --global --unset http.proxy
-> git config --global --unset https.proxy
-> ```
+前端构建输出至 `docs/`。静态部署还需配置后端服务及 `/api` 反向代理，单独托管静态文件不能提供数据库业务。后端构建后可使用 `npm run start` 启动。
 
-## 项目要点（面试用）
+## 目录结构
 
-### API 封装
-axios 实例统一设置 `baseURL: '/api'`，请求拦截器自动带 token，响应拦截器统一处理错误码和异常消息。开发环境通过 Vite proxy 转发到后端，生产环境（GitHub Pages）自动降级到 mock 数据。
+```text
+my-project/
+├─ src/
+│  ├─ api/                 # 请求封装与业务接口
+│  ├─ components/          # 公共组件
+│  ├─ router/              # 路由、登录守卫与首页上报
+│  ├─ stores/              # Pinia 状态
+│  ├─ types/               # TypeScript 类型
+│  ├─ utils/               # 日期、请求竞态与匿名标识等工具
+│  └─ views/               # 用户页面和管理页面
+├─ server/
+│  ├─ src/                 # NestJS 业务模块及测试
+│  ├─ prisma/              # 数据模型及已有迁移 SQL
+│  ├─ test/                # 接口测试
+│  ├─ BENCHMARK.md         # 基准测试复现步骤
+│  └─ BENCHMARK_RESULTS.md # 性能结果与执行计划说明
+├─ tests/                  # 前端工具逻辑测试
+├─ plans/                  # 迁移、接口契约和功能设计记录
+├─ public/                 # 静态资源
+├─ docs/                   # 前端构建产物
+├─ travel-backend/         # 保留的 Spring Boot 实现
+└─ vite.config.ts          # 开发代理与构建配置
+```
 
-### 主题切换
-使用 CSS 变量实现全局主题管理，Pinia 存储用户偏好，页面内嵌 script 从 localStorage 读取主题，避免首屏闪白。
+## 当前边界与后续方向
 
-### 路由守卫
-Vue Router 的 `beforeEach` 守卫配合 Pinia 用户状态，控制个人中心等页面的访问权限，未登录自动跳转登录页。
-
-### 搜索分页
-搜索结果支持客户端分页，可切换每页条数（6/12/24），切换筛选条件时自动重置到第一页。
-
-## 在线访问
-
-https://zhouwenwen-sketch.github.io/shanghai-travel-guide/
-
-## 近期优化：全项目 TypeScript 类型化
-
-对项目全部视图组件进行了系统性 TypeScript 类型增强，覆盖 10 个 `.vue` 文件，实现了 `vue-tsc --noEmit` 零类型错误。
-
-### 改造范围
-
-| 阶段 | 文件 | 关键改进 |
-|------|------|---------|
-| 一：核心组件 | hotel-detail.vue, search-result.vue, recommend-list.vue, user-center.vue | 数据 ref 泛型化、函数参数/返回值类型约束、catch 类型安全、模板 ref 自动解包 |
-| 二：子组件 | topfilter.vue, searchlist.vue, login.vue | defineEmits/defineProps 泛型模式、`Record<string, string>` 动态对象、日期范围元组类型 |
-| 三：类型质量 | types/index.ts, banner.vue, headerNav.vue, navMenu.vue | 提取共享类型、类型守卫过滤 null、接口定义替代隐式 any |
-
-### 主要收益
-
-- **编译期捕获**: `hotel.name` 等属性访问不再有运行时 `undefined` 风险
-- **IDE 智能提示**: 所有 `ref`、`computed`、函数参数都有完整类型推断和补全
-- **安全异常处理**: 全局 `catch (e: unknown)` 模式，必须 `e instanceof Error` 收窄后才能访问 `e.message`
-- **共享类型沉淀**: `FilterChangePayload`、`CriteriaTag` 等跨组件类型统一管理
-- **零编译错误**: `vue-tsc --strict` 模式下全项目通过
-
-## 作者
-
-周文雯 - 上海大学计算机科学与技术专业
+- 预订功能是演示记录闭环，未接入真实支付、退款、酒店库存或供应商确认。
+- 坐标示意图不提供真实地图、导航、路线规划或交通时间；POI 内容以演示数据为主。
+- 当前仅使用短期 access token，未实现 refresh token、主动吊销和多设备会话管理。
+- 酒店搜索已有服务端分页，预订和行程列表仍有进一步分页优化空间；模糊关键词和深页查询的限制见性能实测文档。
+- 本地开发以 Prisma `db push` 为主。已有访问统计迁移 SQL 不构成完整的空库迁移链；生产部署前需补齐并验证迁移流程，不能直接以 `db push` 替代生产迁移。
+- 已有前端工具测试和后端单元/接口测试，尚不能视为完整的浏览器端到端测试体系；全站移动端适配仍需完善。
+- 当前平台未集成 AI 自动行程生成。本地同级目录的 `travel-agent-python/` 是独立的 AI 旅行规划助手项目（不包含在本仓库中），后续可探索通过受控业务接口集成。
+- 后续重点：真实地图与路线能力、行程预算和服务端时间约束、更多自动化测试，以及部署、监控和数据备份。

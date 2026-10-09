@@ -1,5 +1,6 @@
 import api from './index'
-import type { Hotel, SearchParams } from '@/types'
+import type { Hotel, HotelListItem, HotelSearchQuery, PageResponse, SearchParams } from '@/types'
+import { hotelSearchParams } from '@/utils/hotel-search'
 
 export async function getAllHotels(): Promise<Hotel[]> {
   return await api.get('/hotels')
@@ -15,4 +16,11 @@ export async function getHotelDetail(id: number | string): Promise<Hotel | null>
 
 export async function searchHotels(params: SearchParams = {}): Promise<Hotel[]> {
   return await api.get('/hotels/search', { params })
+}
+
+export async function searchHotelsPaged(params: HotelSearchQuery = {}, signal?: AbortSignal): Promise<PageResponse<HotelListItem>> {
+  return await api.get('/hotels/search/paged', {
+    params: hotelSearchParams(params),
+    signal,
+  })
 }

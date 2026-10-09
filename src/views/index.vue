@@ -9,8 +9,17 @@ import Topfilter from './topfilter.vue'
 import Recommend from './recommend.vue'
 
 const router = useRouter()
-// template ref 获取 Searchlist 组件实例（defineExpose 暴露的 ref 需用 .value 访问）
-const searchlistRef = ref<any>(null)
+type SearchlistExpose = {
+  destination: string
+  keyword: string
+  guests: string
+  checkIn: string
+  checkOut: string
+  validateDates: () => boolean
+}
+
+// defineExpose 暴露的 ref 在父组件实例代理上会被自动解包。
+const searchlistRef = ref<SearchlistExpose | null>(null)
 
 // 当前筛选状态（同步给 Searchlist 和 Topfilter）
 const activeFilters = reactive<FilterChangePayload>({})
@@ -20,13 +29,12 @@ const buildSearchQuery = (filters: FilterChangePayload): Record<string, string> 
   const query: Record<string, string> = {}
   const sl = searchlistRef.value
   if (sl) {
-    if (sl.destination?.value?.trim()) query.destination = sl.destination.value.trim()
-    if (sl.keyword?.value?.trim()) query.keyword = sl.keyword.value.trim()
-    if (sl.guests?.value?.trim()) query.guests = sl.guests.value.trim()
-    if (sl.dateRange?.value) {
-      const [s, e] = sl.dateRange.value
-      query.checkIn = s.toLocaleDateString('zh-CN')
-      query.checkOut = e.toLocaleDateString('zh-CN')
+    if (sl.destination.trim()) query.destination = sl.destination.trim()
+    if (sl.keyword.trim()) query.keyword = sl.keyword.trim()
+    if (sl.guests.trim()) query.guests = sl.guests.trim()
+    if (sl.checkIn && sl.checkOut && sl.checkOut > sl.checkIn) {
+      query.checkIn = sl.checkIn
+      query.checkOut = sl.checkOut
     }
   }
   if (filters.area?.length) query.area = filters.area.join(',')
@@ -37,6 +45,7 @@ const buildSearchQuery = (filters: FilterChangePayload): Record<string, string> 
 
 // 点击筛选条件 → 携带搜索框内容 + 筛选条件，跳转到搜索页
 const onFilterChange = (filters: FilterChangePayload): void => {
+  if (searchlistRef.value && !searchlistRef.value.validateDates()) return
   Object.assign(activeFilters, filters)
   router.push({ name: 'search', query: buildSearchQuery(filters) })
 }

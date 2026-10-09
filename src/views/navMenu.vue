@@ -3,24 +3,27 @@ import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Moon, Sunny } from '@element-plus/icons-vue'
 import { useThemeStore } from '@/stores/theme'
+import { useRouter } from 'vue-router'
 
 interface AsideItem {
   id: number
   title: string
   icon: string
+  route?: string
 }
 
 // 初始值：true 表示折叠（菜单窄），false 表示展开（菜单宽）
 const isCollapse = ref(true)
 
 const themeStore = useThemeStore()
+const router = useRouter()
 const { isDark } = storeToRefs(themeStore)
 
 // 引入第三方图标
 const asidelist = ref<AsideItem[]>([
-  { id: 1, title: '酒店', icon: 'icon-jiudian' },
-  { id: 2, title: '旅游', icon: 'icon-lvyou' },
-  { id: 3, title: '景点', icon: 'icon-jingdian' },
+  { id: 1, title: '酒店', icon: 'icon-jiudian', route: '/' },
+  { id: 2, title: '旅游', icon: 'icon-lvyou', route: '/pois' },
+  { id: 3, title: '景点', icon: 'icon-jingdian', route: '/pois?type=ATTRACTION' },
   { id: 4, title: '机票', icon: 'icon-jipiao' },
   { id: 5, title: '火车票', icon: 'icon-huochepiao' },
   { id: 6, title: '汽车票', icon: 'icon-qichepiao' },
@@ -30,6 +33,7 @@ const asidelist = ref<AsideItem[]>([
 
 const handleOpen = (): void => {}
 const handleClose = (): void => {}
+const selectChannel = (item: AsideItem): void => { if (item.route) void router.push(item.route) }
 </script>
 
 <template>
@@ -67,7 +71,7 @@ const handleClose = (): void => {}
           </el-tooltip>
         </div>
 
-        <el-menu-item v-for="v in asidelist" :key="v.id" :index="String(v.id)">
+        <el-menu-item v-for="v in asidelist.filter(item => item.route)" :key="v.id" :index="String(v.id)" @click="selectChannel(v)">
           <i class="iconfont" :class="v.icon"></i>
           <template #title>{{ v.title }}</template>
         </el-menu-item>

@@ -1,45 +1,47 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { User, Clock, Delete, ArrowLeft } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { getFavorites, removeFavorite } from '@/api/favorites'
 import { getHistory, clearHistory } from '@/api/history'
-import type { Hotel, BrowseHistory } from '@/types'
+import type { HotelSummary, BrowseHistory } from '@/types'
 
 const router = useRouter()
 const userStore = useUserStore()
-const { displayName, userId } = storeToRefs(userStore)
+const { displayName } = storeToRefs(userStore)
 
 const activeTab = ref('info')
-const favoriteHotels = ref<Hotel[]>([])
+const favoriteHotels = ref<HotelSummary[]>([])
 const historyList = ref<BrowseHistory[]>([])
-const loading = ref(false)
+const pendingRequests = ref(0)
+const loading = computed(() => pendingRequests.value > 0)
+
+const withLoading = async <T>(request: () => Promise<T>): Promise<T> => {
+  pendingRequests.value += 1
+  try {
+    return await request()
+  } finally {
+    pendingRequests.value -= 1
+  }
+}
 
 const loadFavorites = async () => {
-  if (!userId.value) return
-  loading.value = true
   try {
     // favorites 返回的数据包含 hotel 对象
-    const list = await getFavorites(userId.value)
-    favoriteHotels.value = list.map(f => f.hotel).filter((h): h is Hotel => h != null)
+    const list = await withLoading(getFavorites)
+    favoriteHotels.value = list.map(f => f.hotel)
   } catch (e: unknown) {
     console.error('加载收藏失败:', e)
-  } finally {
-    loading.value = false
   }
 }
 
 const loadHistory = async () => {
-  if (!userId.value) return
-  loading.value = true
   try {
-    historyList.value = await getHistory(userId.value)
+    historyList.value = await withLoading(getHistory)
   } catch (e: unknown) {
     console.error('加载历史失败:', e)
-  } finally {
-    loading.value = false
   }
 }
 
@@ -54,8 +56,8 @@ watch(activeTab, (tab) => {
   if (tab === 'history') loadHistory()
 })
 
-const formatTime = (ts: number): string => {
-  const d = new Date(ts)
+const formatTime = (timestamp: number): string => {
+  const d = new Date(timestamp)
   const pad = (n: number): string => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
@@ -69,9 +71,8 @@ const goBack = () => {
 }
 
 const handleClearHistory = async () => {
-  if (!userId.value) return
   try {
-    await clearHistory(userId.value)
+    await clearHistory()
     historyList.value = []
   } catch (e: unknown) {
     console.error('清空历史失败:', e)
@@ -79,9 +80,8 @@ const handleClearHistory = async () => {
 }
 
 const handleRemoveFavorite = async (hotelId: number): Promise<void> => {
-  if (!userId.value) return
   try {
-    await removeFavorite(userId.value, hotelId)
+    await removeFavorite(hotelId)
     favoriteHotels.value = favoriteHotels.value.filter(h => h.id !== hotelId)
   } catch (e: unknown) {
     console.error('取消收藏失败:', e)
@@ -161,7 +161,7 @@ const handleRemoveFavorite = async (hotelId: number): Promise<void> => {
               <el-button type="danger" size="small" text @click="handleClearHistory">清空记录</el-button>
             </div>
             <div v-if="historyList.length" class="uc-hotel-list">
-              <div class="uc-hotel-item" v-for="h in historyList" :key="h.hotelId">
+              <div class="uc-hotel-item" v-for="h in historyList" :key="h.id">
                 <div class="uc-hotel-left" @click="h.hotel && goDetail(h.hotel.id)">
                   <div class="uc-hotel-img">
                     <img :src="h.hotel?.img_url" alt="" />
@@ -170,7 +170,7 @@ const handleRemoveFavorite = async (hotelId: number): Promise<void> => {
                     <h3>{{ h.hotel?.name }}</h3>
                     <p class="uc-hotel-time">
                       <el-icon><Clock /></el-icon>
-                      {{ h.timestamp ? formatTime(h.timestamp) : '' }}
+                      {{ formatTime(h.visitedAt) }}
                     </p>
                   </div>
                 </div>

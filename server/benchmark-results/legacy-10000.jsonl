@@ -1,0 +1,5 @@
+{"kind":"metadata","apiUrl":"http://127.0.0.1:8084","database":"travel_bench","count":10000,"seed":20260922,"gitCommit":"352010504a1ff24211910a571378e8654e5d91d9","mysqlVersion":"8.0.45","node":"v24.14.0","platform":"win32","arch":"x64","cpu":"12th Gen Intel(R) Core(TM) i5-1240P","logicalCpus":16,"totalMemoryBytes":16890912768,"timestamp":"2026-09-23T09:55:22.690Z","heapMetric":"sampled server heapUsedBytes after requests"}
+{"scenario":"all","warmup":5,"samples":20,"timeout":false,"p50Ms":179.83950000000004,"p95Ms":218.64179999999942,"responseKB":3478.69140625,"sampledServerHeapPeakBytes":241098808}
+{"scenario":"area-star","warmup":5,"samples":20,"timeout":false,"p50Ms":21.02759999999944,"p95Ms":24.65729999999894,"responseKB":108.833984375,"sampledServerHeapPeakBytes":145177944}
+{"scenario":"price","warmup":5,"samples":20,"timeout":false,"p50Ms":50.61959999999999,"p95Ms":60.90660000000025,"responseKB":902.0166015625,"sampledServerHeapPeakBytes":210024632}
+{"scenario":"keyword","warmup":5,"samples":20,"timeout":false,"p50Ms":171.1783000000014,"p95Ms":232.1988999999994,"responseKB":3478.69140625,"sampledServerHeapPeakBytes":312119448}

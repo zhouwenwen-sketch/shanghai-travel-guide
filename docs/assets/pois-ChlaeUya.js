@@ -1,0 +1,1 @@
+import{t as e}from"./api-CRs2FH0K.js";var t=(t={})=>e.get(`/pois`,{params:t}),n=t=>e.get(`/pois/${t}`),r=(t={})=>e.get(`/admin/pois`,{params:t}),i=t=>e.post(`/admin/pois`,t),a=(t,n)=>e.put(`/admin/pois/${t}`,n),o=(t,n)=>e.delete(`/admin/pois/${t}`,{headers:{"If-Match":`"${n}"`}});export{t as a,n as i,o as n,a as o,r,i as t};

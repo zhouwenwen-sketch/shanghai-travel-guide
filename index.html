@@ -1,15 +1,23 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>my-project</title>
+    <meta
+      name="description"
+      content="上海旅游攻略平台，提供酒店浏览、搜索、筛选和收藏功能。"
+    />
+    <title>上海旅游攻略平台</title>
     <!-- 与 Pinia theme 的 localStorage 键 app-theme 一致，避免首屏浅色闪一下 -->
     <script>
       try {
-        if (localStorage.getItem('app-theme') === 'dark')
-          document.documentElement.classList.add('dark')
+        const storedTheme = localStorage.getItem('app-theme')
+        const theme =
+          storedTheme === 'dark' || storedTheme === 'light'
+            ? storedTheme
+            : JSON.parse(storedTheme || '{}').mode
+        if (theme === 'dark') document.documentElement.classList.add('dark')
       } catch (e) {}
     </script>
   </head>

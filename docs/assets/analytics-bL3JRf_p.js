@@ -1,0 +1,1 @@
+import{i as e,t}from"./api-CRs2FH0K.js";var n=e({getHomeAnalytics:()=>i,recordHomeView:()=>r}),r=e=>t.post(`/analytics/home-view`,e),i=(e,n)=>t.get(`/admin/analytics/home`,{params:{start:e,end:n}});export{i as n,n as t};

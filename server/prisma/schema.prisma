@@ -1,0 +1,213 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model users {
+  id             BigInt           @id @default(autoincrement())
+  username       String           @unique(map: "uk_users_username") @db.VarChar(50)
+  password       String           @db.VarChar(255)
+  created_at     DateTime?        @db.DateTime(6)
+  role           String           @default("USER") @db.VarChar(20)
+  bookings       bookings[]
+  browse_history browse_history[]
+  favorites      favorites[]
+  itineraries    itineraries[]
+}
+
+model hotels {
+  id              BigInt            @id @default(autoincrement())
+  name            String?           @db.VarChar(255)
+  recommended     Boolean?          @db.Bit(1)
+  star_level      Int?
+  img_url         String?           @db.VarChar(255)
+  banner_url      String?           @db.VarChar(255)
+  starimg_url     String?           @db.VarChar(255)
+  transport       String?           @db.VarChar(255)
+  phone           String?           @db.VarChar(255)
+  area            String?           @db.VarChar(255)
+  price_level     String?           @db.VarChar(255)
+  price           Int?
+  description     String?           @db.Text
+  rating          Float?
+  review_count    Int?
+  review_desc     String?           @db.VarChar(255)
+  bookings        bookings[]
+  browse_history  browse_history[]
+  favorites       favorites[]
+  hotel_tags      hotel_tags[]
+  itinerary_items itinerary_items[]
+  reviews         reviews[]
+  rooms           rooms[]
+
+  @@index([area, star_level, id], map: "idx_hotels_area_star_id")
+  @@index([price, id], map: "idx_hotels_price_id")
+}
+
+model rooms {
+  id          BigInt  @id @default(autoincrement())
+  name        String? @db.VarChar(255)
+  area        String? @db.VarChar(255)
+  bed         String? @db.VarChar(255)
+  price       Int?
+  breakfast   String? @db.VarChar(255)
+  cancel_rule String? @db.VarChar(255)
+  hotel_id    BigInt?
+  hotels      hotels? @relation(fields: [hotel_id], references: [id], map: "fk_rooms_hotel")
+
+  @@unique([hotel_id, name], map: "uk_rooms_hotel_name")
+}
+
+model reviews {
+  id          BigInt  @id @default(autoincrement())
+  review_user String? @db.VarChar(255)
+  rating      Float?
+  date        String? @db.VarChar(255)
+  content     String? @db.Text
+  reply       String? @db.Text
+  hotel_id    BigInt?
+  hotels      hotels? @relation(fields: [hotel_id], references: [id], map: "fk_reviews_hotel")
+
+  @@unique([hotel_id, review_user, date], map: "uk_reviews_hotel_user_date")
+}
+
+model hotel_tags {
+  hotel_id BigInt
+  tag      String @db.VarChar(255)
+  hotels   hotels @relation(fields: [hotel_id], references: [id], map: "fk_hotel_tags_hotel")
+
+  @@unique([hotel_id, tag], map: "uk_hotel_tags")
+}
+
+model favorites {
+  id         BigInt    @id @default(autoincrement())
+  user_id    BigInt?
+  hotel_id   BigInt?
+  created_at DateTime? @db.DateTime(6)
+  hotels     hotels?   @relation(fields: [hotel_id], references: [id], map: "fk_favorites_hotel")
+  users      users?    @relation(fields: [user_id], references: [id], map: "fk_favorites_user")
+
+  @@unique([user_id, hotel_id], map: "uk_favorites_user_hotel")
+}
+
+model browse_history {
+  id          BigInt  @id @default(autoincrement())
+  user_id     BigInt?
+  hotel_id    BigInt?
+  browse_time BigInt?
+  hotels      hotels? @relation(fields: [hotel_id], references: [id], map: "fk_history_hotel")
+  users       users?  @relation(fields: [user_id], references: [id], map: "fk_history_user")
+
+  @@index([user_id, browse_time], map: "idx_history_user_time")
+}
+
+model home_page_views {
+  id          BigInt   @id @default(autoincrement())
+  event_id    String   @unique(map: "uk_home_page_views_event") @db.Char(36)
+  visitor_id  String   @db.Char(36)
+  session_id  String   @db.Char(36)
+  visit_date  DateTime @db.Date
+  occurred_at DateTime @db.DateTime(6)
+
+  @@index([visit_date], map: "idx_home_page_views_date")
+  @@index([visit_date, visitor_id], map: "idx_home_page_views_date_visitor")
+  @@index([visit_date, session_id], map: "idx_home_page_views_date_session")
+}
+
+model bookings {
+  id              BigInt    @id @default(autoincrement())
+  user_id         BigInt
+  hotel_id        BigInt
+  check_in        DateTime  @db.Date
+  check_out       DateTime  @db.Date
+  guest_count     Int
+  contact_name    String    @db.VarChar(80)
+  contact_phone   String    @db.VarChar(30)
+  nightly_price   Decimal   @db.Decimal(12, 2)
+  total_price     Decimal   @db.Decimal(12, 2)
+  status          String    @db.VarChar(20)
+  created_at      DateTime  @db.DateTime(6)
+  cancelled_at    DateTime? @db.DateTime(6)
+  version         BigInt    @default(0)
+  idempotency_key String?   @db.VarChar(64)
+  hotels          hotels    @relation(fields: [hotel_id], references: [id], map: "fk_booking_hotel")
+  users           users     @relation(fields: [user_id], references: [id], map: "fk_booking_user")
+
+  @@unique([user_id, idempotency_key], map: "uq_booking_user_idempotency")
+  @@index([user_id, created_at], map: "idx_booking_user_created")
+}
+
+model itineraries {
+  id              BigInt            @id @default(autoincrement())
+  user_id         BigInt
+  title           String            @db.VarChar(100)
+  start_date      DateTime          @db.Date
+  end_date        DateTime          @db.Date
+  created_at      DateTime          @db.DateTime(6)
+  updated_at      DateTime          @db.DateTime(6)
+  version         BigInt            @default(0)
+  users           users             @relation(fields: [user_id], references: [id], map: "fk_itinerary_user")
+  itinerary_items itinerary_items[]
+
+  @@index([user_id, updated_at], map: "idx_itinerary_user_updated")
+}
+
+model itinerary_items {
+  id           BigInt      @id @default(autoincrement())
+  itinerary_id BigInt
+  item_date    DateTime    @db.Date
+  day_number   Int
+  type         String      @db.VarChar(20)
+  start_time   DateTime?   @db.Time(0)
+  end_time     DateTime?   @db.Time(0)
+  title        String      @db.VarChar(120)
+  location     String?     @db.VarChar(200)
+  notes        String?     @db.Text
+  sort_order   Int
+  hotel_id     BigInt?
+  poi_id       BigInt?
+  hotels       hotels?     @relation(fields: [hotel_id], references: [id], map: "fk_item_hotel")
+  itineraries  itineraries @relation(fields: [itinerary_id], references: [id], onDelete: Cascade, map: "fk_item_itinerary")
+  pois         pois?       @relation(fields: [poi_id], references: [id], map: "fk_item_poi")
+
+  @@index([itinerary_id, item_date, sort_order], map: "idx_itinerary_item_order")
+  @@index([poi_id], map: "idx_itinerary_item_poi")
+}
+
+model pois {
+  id                         BigInt            @id @default(autoincrement())
+  name                       String            @db.VarChar(120)
+  type                       String            @db.VarChar(30)
+  area                       String            @db.VarChar(50)
+  address                    String            @db.VarChar(200)
+  latitude                   Decimal           @db.Decimal(10, 7)
+  longitude                  Decimal           @db.Decimal(10, 7)
+  opening_hours              String?           @db.VarChar(200)
+  ticket_price               Decimal?          @db.Decimal(10, 2)
+  average_price              Decimal?          @db.Decimal(10, 2)
+  suggested_duration_minutes Int?
+  description                String?           @db.Text
+  image_url                  String?           @db.VarChar(500)
+  rating                     Decimal?          @db.Decimal(2, 1)
+  recommended                Boolean           @default(dbgenerated("b'0'")) @db.Bit(1)
+  active                     Boolean           @default(dbgenerated("b'1'")) @db.Bit(1)
+  version                    BigInt            @default(0)
+  itinerary_items            itinerary_items[]
+  poi_tags                   poi_tags[]
+
+  @@index([recommended, active], map: "idx_poi_recommended_active")
+  @@index([type, area, active], map: "idx_poi_type_area_active")
+}
+
+model poi_tags {
+  poi_id BigInt
+  tag    String @db.VarChar(50)
+  pois   pois   @relation(fields: [poi_id], references: [id], onDelete: Cascade, map: "fk_poi_tags_poi")
+
+  @@unique([poi_id, tag], map: "uq_poi_tags")
+}

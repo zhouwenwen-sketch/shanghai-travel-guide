@@ -1,6 +1,7 @@
 package com.shanghai.travelbackend.repository;
 
 import com.shanghai.travelbackend.entity.Hotel;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -9,11 +10,17 @@ import java.util.Optional;
 
 public interface HotelRepository extends JpaRepository<Hotel, Long> {
 
+    @Override
+    @EntityGraph(attributePaths = "tags")
+    List<Hotel> findAll();
+
+    @EntityGraph(attributePaths = "tags")
     List<Hotel> findByRecommendedTrue();
 
     @Query("SELECT h FROM Hotel h LEFT JOIN FETCH h.rooms WHERE h.id = :id")
     Optional<Hotel> findByIdWithDetails(@Param("id") Long id);
 
+    @EntityGraph(attributePaths = "tags")
     @Query("SELECT h FROM Hotel h WHERE " +
            "(:keyword IS NULL OR h.name LIKE %:keyword% OR h.description LIKE %:keyword%) AND " +
            "(:area IS NULL OR h.area = :area) AND " +
